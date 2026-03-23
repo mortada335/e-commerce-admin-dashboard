@@ -1,0 +1,18 @@
+# Global IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+
+# Subdirectory ignores (to be safe)
+frontend/node_modules/
+frontend/dist/
+frontend/.env*
+backend/vendor/
+backend/node_modules/
+backend/public/storage/
+backend/storage/*.key
+backend/.env
+backend/.phpunit.result.cache
