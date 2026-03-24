@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi, categoriesApi } from "@/lib/api";
 import { formatCurrency, formatDate, getStatusColor, cn } from "@/lib/utils";
-import { Search, Plus, Edit, Trash2, Package, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Package, Filter, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import ProductForm from "./ProductForm";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -14,6 +15,8 @@ export default function ProductsPage() {
   const [status, setStatus] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [page, setPage] = useState(1);
+  const [showForm, setShowForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["products", { search, status, categoryId, page }],
@@ -41,10 +44,21 @@ export default function ProductsPage() {
           <h2 className="text-xl font-bold text-foreground">Products</h2>
           <p className="text-sm text-muted-foreground">{meta?.total ?? 0} total products</p>
         </div>
-        <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+        <button 
+          onClick={() => { setEditingProduct(null); setShowForm(true); }}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
           <Plus className="w-4 h-4" /> Add Product
         </button>
       </div>
+
+      {showForm && (
+        <ProductForm 
+          product={editingProduct} 
+          categories={categories?.data ?? []} 
+          onClose={() => { setShowForm(false); setEditingProduct(null); }}
+        />
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
@@ -136,7 +150,10 @@ export default function ProductsPage() {
                     <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(p.created_at as string)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                        <button 
+                          onClick={() => { setEditingProduct(p); setShowForm(true); }}
+                          className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                        >
                           <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button

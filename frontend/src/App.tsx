@@ -8,13 +8,13 @@ import DashboardPage from "@/features/dashboard/DashboardPage";
 import ProductsPage from "@/features/products/ProductsPage";
 import OrdersPage from "@/features/orders/OrdersPage";
 import CustomersPage from "@/features/customers/CustomersPage";
-import InventoryPage from "@/features/inventory/InventoryPage";
 import BrandsPage from "@/features/brands/BrandsPage";
 import ReviewsPage from "@/features/reviews/ReviewsPage";
 import BannersPage from "@/features/banners/BannersPage";
 import SettingsPage from "@/features/settings/SettingsPage";
 import CouponsPage from "@/features/coupons/CouponsPage";
 import CategoriesPage from "@/features/categories/CategoriesPage";
+import InventoryPage from "@/features/inventory/InventoryPage";
 import { PaymentsPage } from "@/features/misc/Pages";
 
 const queryClient = new QueryClient({

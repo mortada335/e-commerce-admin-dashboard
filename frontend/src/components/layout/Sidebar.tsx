@@ -4,11 +4,22 @@ import { useAuthStore } from "@/store/authStore";
 import { authApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, ShoppingBag, FolderTree, ShoppingCart,
-  Users, CreditCard, Package, Tag, Settings, LogOut, ChevronLeft, Store, Bookmark, Star, Image as ImageIcon
+  LayoutDashboard, ShoppingBag, FolderTree,
+  ShoppingCart,
+  Users,
+  Bookmark,
+  Star,
+  Image as ImageIcon,
+  CreditCard,
+  Package,
+  Ticket,
+  Settings,
+  LogOut,
+  ChevronLeft,
+  Store
 } from "lucide-react";
 
-const navItems = [
+const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard",  to: "/" },
   { icon: ShoppingBag,     label: "Products",   to: "/products" },
   { icon: FolderTree,      label: "Categories", to: "/categories" },
@@ -19,7 +30,7 @@ const navItems = [
   { icon: ImageIcon,       label: "Banners",    to: "/banners" },
   { icon: CreditCard,      label: "Payments",   to: "/payments" },
   { icon: Package,         label: "Inventory",  to: "/inventory" },
-  { icon: Tag,             label: "Coupons",    to: "/coupons" },
+  { icon: Ticket,          label: "Coupons",    to: "/coupons" },
   { icon: Settings,        label: "Settings",   to: "/settings" },
 ];
 
@@ -61,7 +72,7 @@ export function Sidebar() {
 
       {/* Nav items */}
       <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
-        {navItems.map(({ icon: Icon, label, to }) => (
+        {NAV_ITEMS.map(({ icon: Icon, label, to }) => (
           <NavLink
             key={to}
             to={to}
