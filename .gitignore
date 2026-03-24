@@ -11,17 +11,17 @@ frontend/node_modules/
 frontend/dist/
 frontend/.env*
 backend/vendor/
-backend/.env*
-.env*
-**/.env.example
 backend/node_modules/
 backend/public/storage/
 backend/storage/*.key
-backend/.env
-backend/.env.example
-frontend/.env.example
+backend/.env*
+.env*
+**/.env.example
 .env.local
 backend/.phpunit.result.cache
+
+# Implementation Plan (Ignored)
+implementation_plan.md
 
 # Project Notes (Ignored for privacy)
 ISSUES.md
