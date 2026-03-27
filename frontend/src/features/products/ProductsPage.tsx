@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi, categoriesApi } from "@/lib/api";
 import { formatCurrency, formatDate, getStatusColor, cn } from "@/lib/utils";
-import { Search, Plus, Edit, Trash2, Package, Filter, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Package, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import ProductForm from "./ProductForm";
+import { toast } from "sonner";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -17,6 +18,7 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["products", { search, status, categoryId, page }],
@@ -33,8 +35,44 @@ export default function ProductsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] }),
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => productsApi.bulkDelete(ids),
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setSelectedIds([]);
+      qc.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: () => toast.error("Failed to delete selected products."),
+  });
+
   const products = data?.data ?? [];
   const meta = data?.meta;
+
+  const allSelected = products.length > 0 && products.every((p: any) => selectedIds.includes(p.id));
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(products.map((p: any) => p.id));
+    }
+  };
+  const toggleOne = (id: number) => {
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
+
+  const handleExport = async () => {
+    try {
+      const blob = await productsApi.export({ search, status, category_id: categoryId ? Number(categoryId) : undefined });
+      const url = URL.createObjectURL(new Blob([blob]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `products-${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Export failed.");
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -44,12 +82,20 @@ export default function ProductsPage() {
           <h2 className="text-xl font-bold text-foreground">Products</h2>
           <p className="text-sm text-muted-foreground">{meta?.total ?? 0} total products</p>
         </div>
-        <button 
-          onClick={() => { setEditingProduct(null); setShowForm(true); }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Add Product
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border text-sm font-medium text-foreground hover:bg-accent transition-colors"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+          <button 
+            onClick={() => { setEditingProduct(null); setShowForm(true); }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Add Product
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -58,6 +104,26 @@ export default function ProductsPage() {
           categories={categories?.data ?? []} 
           onClose={() => { setShowForm(false); setEditingProduct(null); }}
         />
+      )}
+
+      {/* Bulk Action Bar */}
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/20">
+          <span className="text-sm font-medium text-foreground">{selectedIds.length} selected</span>
+          <button
+            onClick={() => { if (confirm(`Delete ${selectedIds.length} product(s)?`)) bulkDeleteMutation.mutate(selectedIds); }}
+            disabled={bulkDeleteMutation.isPending}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+          </button>
+          <button
+            onClick={() => setSelectedIds([])}
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
+        </div>
       )}
 
       {/* Filters */}
@@ -96,6 +162,10 @@ export default function ProductsPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/30">
               <tr>
+                <th className="px-4 py-3 w-10">
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                    className="rounded border-border accent-primary" />
+                </th>
                 {["Product", "SKU", "Category", "Price", "Stock", "Status", "Created", "Actions"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                 ))}
@@ -105,14 +175,14 @@ export default function ProductsPage() {
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: 9 }).map((_, j) => (
                       <td key={j} className="px-4 py-3"><Skeleton className="h-6" /></td>
                     ))}
                   </tr>
                 ))
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center">
+                  <td colSpan={9} className="px-4 py-12 text-center">
                     <Package className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                     <p className="text-muted-foreground">No products found</p>
                   </td>
@@ -120,6 +190,11 @@ export default function ProductsPage() {
               ) : (
                 products.map((p: Record<string, unknown>) => (
                   <tr key={p.id as number} className="hover:bg-accent/20 transition-colors">
+                    <td className="px-4 py-3">
+                      <input type="checkbox" checked={selectedIds.includes(p.id as number)}
+                        onChange={() => toggleOne(p.id as number)}
+                        className="rounded border-border accent-primary" />
+                    </td>
                     <td className="px-4 py-3">
                       <div>
                         <p className="font-medium text-foreground">{p.name as string}</p>

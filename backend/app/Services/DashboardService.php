@@ -10,9 +10,59 @@ use Carbon\Carbon;
 
 class DashboardService
 {
-    public function getStats(): array
+    public function getStats(?string $from = null, ?string $to = null): array
     {
         $now = Carbon::now();
+
+        // If custom date range provided, compute stats for that range
+        if ($from && $to) {
+            $start = Carbon::parse($from)->startOfDay();
+            $end   = Carbon::parse($to)->endOfDay();
+            $rangeLength = $start->diffInDays($end);
+
+            // Previous period for comparison
+            $prevStart = $start->copy()->subDays($rangeLength + 1);
+            $prevEnd   = $start->copy()->subDay()->endOfDay();
+
+            $rangeRevenue = Order::where('payment_status', 'paid')
+                ->whereBetween('created_at', [$start, $end])->sum('total');
+            $prevRevenue = Order::where('payment_status', 'paid')
+                ->whereBetween('created_at', [$prevStart, $prevEnd])->sum('total');
+
+            $rangeOrders = Order::whereBetween('created_at', [$start, $end])->count();
+            $pendingOrders = Order::where('status', 'pending')
+                ->whereBetween('created_at', [$start, $end])->count();
+
+            $rangeCustomers = Customer::whereBetween('created_at', [$start, $end])->count();
+
+            $lowStockProducts = Product::where('status', 'active')
+                ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
+
+            return [
+                'revenue' => [
+                    'total'       => round($rangeRevenue, 2),
+                    'this_month'  => round($rangeRevenue, 2),
+                    'last_month'  => round($prevRevenue, 2),
+                    'growth'      => $prevRevenue > 0
+                        ? round((($rangeRevenue - $prevRevenue) / $prevRevenue) * 100, 1)
+                        : 0,
+                ],
+                'orders' => [
+                    'total'      => $rangeOrders,
+                    'this_month' => $rangeOrders,
+                    'pending'    => $pendingOrders,
+                ],
+                'customers' => [
+                    'total'      => $rangeCustomers,
+                    'this_month' => $rangeCustomers,
+                ],
+                'inventory' => [
+                    'low_stock_count' => $lowStockProducts,
+                ],
+            ];
+        }
+
+        // Default: current month stats
         $startOfMonth = $now->copy()->startOfMonth();
         $lastMonth = $now->copy()->subMonth()->startOfMonth();
         $endLastMonth = $now->copy()->subMonth()->endOfMonth();
@@ -57,10 +107,20 @@ class DashboardService
         ];
     }
 
-    public function getSalesChart(int $days = 30): array
+    public function getSalesChart(int $days = 30, ?string $from = null, ?string $to = null): array
     {
-        $data = Order::where('payment_status', 'paid')
-            ->where('created_at', '>=', now()->subDays($days))
+        $query = Order::where('payment_status', 'paid');
+
+        if ($from && $to) {
+            $query->whereBetween('created_at', [
+                Carbon::parse($from)->startOfDay(),
+                Carbon::parse($to)->endOfDay(),
+            ]);
+        } else {
+            $query->where('created_at', '>=', now()->subDays($days));
+        }
+
+        $data = $query
             ->selectRaw("DATE(created_at) as date, SUM(total) as revenue, COUNT(*) as orders")
             ->groupBy('date')
             ->orderBy('date')

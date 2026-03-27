@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
 {
@@ -42,5 +43,65 @@ class OrderController extends Controller
 
         $order = $this->service->updateStatus($order, $request->status, $request->comment);
         return response()->json(new OrderResource($order));
+    }
+
+    public function bulkUpdateStatus(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids'    => 'required|array|min:1|max:100',
+            'ids.*'  => 'integer|exists:orders,id',
+            'status' => 'required|in:pending,processing,shipped,delivered,canceled,refunded',
+        ]);
+
+        $orders = Order::whereIn('id', $request->ids)->get();
+        $updated = 0;
+        $skipped = [];
+
+        foreach ($orders as $order) {
+            if ($this->service->canTransition($order, $request->status)) {
+                $this->service->updateStatus($order, $request->status);
+                $updated++;
+            } else {
+                $skipped[] = [
+                    'id'            => $order->id,
+                    'order_number'  => $order->order_number,
+                    'current_status'=> $order->status,
+                    'reason'        => "Cannot transition from '{$order->status}' to '{$request->status}'.",
+                ];
+            }
+        }
+
+        return response()->json([
+            'message' => "{$updated} order(s) updated.",
+            'skipped' => $skipped,
+        ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $orders = $this->service->list(array_merge($request->all(), ['per_page' => 10000]));
+
+        return response()->streamDownload(function () use ($orders) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Order #', 'Customer', 'Status', 'Payment Status', 'Subtotal', 'Discount', 'Tax', 'Shipping', 'Total', 'Created At']);
+
+            foreach ($orders->items() as $order) {
+                fputcsv($handle, [
+                    $order->order_number,
+                    $order->customer?->full_name ?? 'Guest',
+                    $order->status,
+                    $order->payment_status,
+                    $order->subtotal,
+                    $order->discount_amount,
+                    $order->tax_amount,
+                    $order->shipping_amount,
+                    $order->total,
+                    $order->created_at->toDateTimeString(),
+                ]);
+            }
+            fclose($handle);
+        }, 'orders-' . now()->format('Y-m-d') . '.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
     }
 }

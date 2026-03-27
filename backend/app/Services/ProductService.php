@@ -9,6 +9,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ProductService
 {
@@ -45,7 +46,13 @@ class ProductService
     public function create(array $data, array $imageFiles = []): Product
     {
         return DB::transaction(function () use ($data, $imageFiles) {
-            $product = Product::create($data);
+            try {
+                $product = Product::create($data);
+            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                throw ValidationException::withMessages([
+                    'sku' => ['A product with this SKU already exists.'],
+                ]);
+            }
 
             foreach ($imageFiles as $index => $file) {
                 $this->storeImage($product, $file, $index);
@@ -61,7 +68,14 @@ class ProductService
     {
         return DB::transaction(function () use ($product, $data, $imageFiles) {
             $old = $product->toArray();
-            $product->update($data);
+
+            try {
+                $product->update($data);
+            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                throw ValidationException::withMessages([
+                    'sku' => ['A product with this SKU already exists.'],
+                ]);
+            }
 
             foreach ($imageFiles as $index => $file) {
                 $this->storeImage($product, $file, $product->images()->count() + $index);
@@ -75,6 +89,19 @@ class ProductService
 
     public function delete(Product $product): void
     {
+        // Check if product has been used in any orders
+        if ($product->orderItems()->exists()) {
+            // Soft-delete only — keep images for order history reference
+            ActivityLog::record('product_deleted', $product);
+            $product->delete();
+            return;
+        }
+
+        // No orders reference this product — clean up images from disk
+        foreach ($product->images as $image) {
+            Storage::disk('public')->delete($image->path);
+        }
+
         ActivityLog::record('product_deleted', $product);
         $product->delete();
     }

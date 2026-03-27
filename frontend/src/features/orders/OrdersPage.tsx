@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ordersApi } from "@/lib/api";
 import { formatCurrency, formatDate, formatRelativeDate, getStatusColor } from "@/lib/utils";
-import { Search, ShoppingCart, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Search, ShoppingCart, ChevronLeft, ChevronRight, Eye, Download, Calendar } from "lucide-react";
+import { toast } from "sonner";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -14,22 +15,65 @@ export default function OrdersPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [viewingOrder, setViewingOrder] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [bulkStatus, setBulkStatus] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["orders", { search, status, page }],
-    queryFn: () => ordersApi.list({ search, status, page }),
+    queryKey: ["orders", { search, status, dateFrom, dateTo, page }],
+    queryFn: () => ordersApi.list({ search, status, date_from: dateFrom || undefined, date_to: dateTo || undefined, page }),
   });
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
       ordersApi.updateStatus(id, status),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["orders"] }),
+    onError: (err: any) => toast.error(err?.response?.data?.message || "Status update failed."),
+  });
+
+  const bulkStatusMutation = useMutation({
+    mutationFn: ({ ids, status }: { ids: number[]; status: string }) =>
+      ordersApi.bulkUpdateStatus(ids, status),
+    onSuccess: (data) => {
+      toast.success(data.message);
+      if (data.skipped?.length > 0) {
+        toast.warning(`${data.skipped.length} order(s) skipped due to invalid transitions.`);
+      }
+      setSelectedIds([]);
+      setBulkStatus("");
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: () => toast.error("Bulk status update failed."),
   });
 
   const orders = data?.data ?? [];
   const meta = data?.meta;
+
+  const allSelected = orders.length > 0 && orders.every((o: any) => selectedIds.includes(o.id));
+  const toggleAll = () => {
+    if (allSelected) setSelectedIds([]);
+    else setSelectedIds(orders.map((o: any) => o.id));
+  };
+  const toggleOne = (id: number) => {
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
+
+  const handleExport = async () => {
+    try {
+      const blob = await ordersApi.export({ search, status, date_from: dateFrom || undefined, date_to: dateTo || undefined });
+      const url = URL.createObjectURL(new Blob([blob]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `orders-${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Export failed.");
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -38,8 +82,46 @@ export default function OrdersPage() {
           <h2 className="text-xl font-bold text-foreground">Orders</h2>
           <p className="text-sm text-muted-foreground">{meta?.total ?? 0} total orders</p>
         </div>
+        <button
+          onClick={handleExport}
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border text-sm font-medium text-foreground hover:bg-accent transition-colors"
+        >
+          <Download className="w-4 h-4" /> Export CSV
+        </button>
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/20">
+          <span className="text-sm font-medium text-foreground">{selectedIds.length} selected</span>
+          <select
+            value={bulkStatus}
+            onChange={(e) => setBulkStatus(e.target.value)}
+            className="px-2 py-1 rounded-lg bg-card border border-border text-xs outline-none text-foreground"
+          >
+            <option value="">Change Status To...</option>
+            {ORDER_STATUSES.map((s) => (
+              <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+            ))}
+          </select>
+          {bulkStatus && (
+            <button
+              onClick={() => bulkStatusMutation.mutate({ ids: selectedIds, status: bulkStatus })}
+              disabled={bulkStatusMutation.isPending}
+              className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              Apply
+            </button>
+          )}
+          <button onClick={() => { setSelectedIds([]); setBulkStatus(""); }}
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="flex-1 min-w-48 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -56,6 +138,18 @@ export default function OrdersPage() {
           <option value="">All Status</option>
           {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
         </select>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-muted-foreground" />
+          <input
+            type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            className="px-2 py-2 rounded-lg bg-card border border-border text-sm outline-none text-foreground"
+          />
+          <span className="text-muted-foreground text-xs">to</span>
+          <input
+            type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            className="px-2 py-2 rounded-lg bg-card border border-border text-sm outline-none text-foreground"
+          />
+        </div>
       </div>
 
       <div className="glass rounded-xl overflow-hidden">
@@ -63,6 +157,10 @@ export default function OrdersPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/30">
               <tr>
+                <th className="px-4 py-3 w-10">
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                    className="rounded border-border accent-primary" />
+                </th>
                 {["Order #", "Customer", "Items", "Status", "Payment", "Total", "Date", "Actions"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                 ))}
@@ -71,17 +169,22 @@ export default function OrdersPage() {
             <tbody className="divide-y divide-border/50">
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i}>{Array.from({ length: 8 }).map((_, j) => <td key={j} className="px-4 py-3"><Skeleton className="h-6" /></td>)}</tr>
+                  <tr key={i}>{Array.from({ length: 9 }).map((_, j) => <td key={j} className="px-4 py-3"><Skeleton className="h-6" /></td>)}</tr>
                 ))
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center">
+                  <td colSpan={9} className="px-4 py-12 text-center">
                     <ShoppingCart className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                     <p className="text-muted-foreground">No orders found</p>
                   </td>
                 </tr>
               ) : orders.map((o: Record<string, unknown>) => (
                 <tr key={o.id as number} className="hover:bg-accent/20 transition-colors">
+                  <td className="px-4 py-3">
+                    <input type="checkbox" checked={selectedIds.includes(o.id as number)}
+                      onChange={() => toggleOne(o.id as number)}
+                      className="rounded border-border accent-primary" />
+                  </td>
                   <td className="px-4 py-3 font-mono text-xs text-primary">{o.order_number as string}</td>
                   <td className="px-4 py-3 text-foreground">{(o.customer as Record<string, string> | null)?.full_name ?? "Guest"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{(o.items as unknown[])?.length ?? 0} items</td>
@@ -130,6 +233,7 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
+
       {/* Order Detail Modal */}
       {viewingOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
@@ -156,8 +260,8 @@ export default function OrdersPage() {
               </div>
               <div className="text-right">
                 <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Shipping Address</p>
-                <p className="text-sm text-muted-foreground">{viewingOrder.shipping_address?.address}</p>
-                <p className="text-sm text-muted-foreground">{viewingOrder.shipping_address?.city}, {viewingOrder.shipping_address?.state} {viewingOrder.shipping_address?.zip_code}</p>
+                <p className="text-sm text-muted-foreground">{viewingOrder.shipping?.address}</p>
+                <p className="text-sm text-muted-foreground">{viewingOrder.shipping?.city}, {viewingOrder.shipping?.state} {viewingOrder.shipping?.zip}</p>
               </div>
             </div>
 
@@ -167,14 +271,14 @@ export default function OrdersPage() {
                 <div key={item.id} className="flex items-center justify-between py-1">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-xs font-bold">
-                      {item.product?.name?.[0]}
+                      {item.product_name?.[0]}
                     </div>
                     <div>
                       <p className="text-sm font-medium">{item.product_name}</p>
                       <p className="text-xs text-muted-foreground">Qty: {item.quantity} × {formatCurrency(item.unit_price)}</p>
                     </div>
                   </div>
-                  <p className="text-sm font-semibold">{formatCurrency(item.total)}</p>
+                  <p className="text-sm font-semibold">{formatCurrency(item.subtotal)}</p>
                 </div>
               ))}
             </div>
@@ -184,15 +288,15 @@ export default function OrdersPage() {
                 <p>Subtotal</p>
                 <p>{formatCurrency(viewingOrder.subtotal)}</p>
               </div>
-              {viewingOrder.discount_total > 0 && (
+              {viewingOrder.discount_amount > 0 && (
                 <div className="flex justify-between text-sm text-red-400">
                   <p>Discount</p>
-                  <p>- {formatCurrency(viewingOrder.discount_total)}</p>
+                  <p>- {formatCurrency(viewingOrder.discount_amount)}</p>
                 </div>
               )}
               <div className="flex justify-between text-sm text-muted-foreground">
                 <p>Tax</p>
-                <p>{formatCurrency(viewingOrder.tax_total)}</p>
+                <p>{formatCurrency(viewingOrder.tax_amount)}</p>
               </div>
               <div className="flex justify-between text-base font-bold text-foreground pt-2">
                 <p>Grand Total</p>

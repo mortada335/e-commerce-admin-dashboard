@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\StockAlert;
+use App\Models\ActivityLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -47,10 +48,19 @@ class InventoryController extends Controller
     public function updateStock(Request $request, Product $product): JsonResponse
     {
         $data = $request->validate([
-            'stock_quantity'      => 'required|integer|min:0',
-            'low_stock_threshold' => 'nullable|integer|min:0',
+            'stock_quantity'      => 'required|integer|min:0|max:999999',
+            'low_stock_threshold' => 'nullable|integer|min:0|max:999999',
         ]);
+
+        $oldStock = $product->stock_quantity;
         $product->update($data);
+
+        ActivityLog::record('stock_updated', $product, [
+            'stock_quantity' => $oldStock,
+        ], [
+            'stock_quantity' => $data['stock_quantity'],
+        ]);
+
         return response()->json([
             'id'             => $product->id,
             'stock_quantity' => $product->stock_quantity,

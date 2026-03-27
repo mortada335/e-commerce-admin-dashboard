@@ -7,9 +7,11 @@ use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Models\ActivityLog;
 use App\Services\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductController extends Controller
 {
@@ -64,5 +66,51 @@ class ProductController extends Controller
     {
         $this->service->deleteImage($product, $imageId);
         return response()->json(['message' => 'Image deleted.']);
+    }
+
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids'   => 'required|array|min:1|max:100',
+            'ids.*' => 'integer|exists:products,id',
+        ]);
+
+        $products = Product::whereIn('id', $request->ids)->get();
+
+        foreach ($products as $product) {
+            $this->service->delete($product);
+        }
+
+        return response()->json([
+            'message' => count($products) . ' product(s) deleted.',
+        ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $products = $this->service->list(array_merge($request->all(), ['per_page' => 10000]));
+
+        return response()->streamDownload(function () use ($products) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['ID', 'Name', 'SKU', 'Category', 'Price', 'Discount Price', 'Stock', 'Status', 'Featured', 'Created At']);
+
+            foreach ($products->items() as $product) {
+                fputcsv($handle, [
+                    $product->id,
+                    $product->name,
+                    $product->sku,
+                    $product->category?->name ?? '',
+                    $product->price,
+                    $product->discount_price ?? '',
+                    $product->stock_quantity,
+                    $product->status,
+                    $product->is_featured ? 'Yes' : 'No',
+                    $product->created_at->toDateTimeString(),
+                ]);
+            }
+            fclose($handle);
+        }, 'products-' . now()->format('Y-m-d') . '.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
     }
 }

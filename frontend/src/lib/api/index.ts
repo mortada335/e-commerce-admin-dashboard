@@ -10,8 +10,10 @@ export const authApi = {
 };
 
 export const dashboardApi = {
-  stats: () => api.get("/dashboard/stats").then((r) => r.data),
-  salesChart: (days = 30) => api.get("/dashboard/sales-chart", { params: { days } }).then((r) => r.data),
+  stats: (from?: string, to?: string) =>
+    api.get("/dashboard/stats", { params: { from, to } }).then((r) => r.data),
+  salesChart: (days = 30, from?: string, to?: string) =>
+    api.get("/dashboard/sales-chart", { params: { days, from, to } }).then((r) => r.data),
   recentOrders: (limit = 10) => api.get("/dashboard/recent-orders", { params: { limit } }).then((r) => r.data),
   topProducts: (limit = 5) => api.get("/dashboard/top-products", { params: { limit } }).then((r) => r.data),
 };
@@ -27,6 +29,8 @@ export const productsApi = {
   update: (id: number, data: FormData) => api.post(`/products/${id}`, data, { params: { _method: "PUT" }, headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data),
   delete: (id: number) => api.delete(`/products/${id}`).then((r) => r.data),
   deleteImage: (productId: number, imageId: number) => api.delete(`/products/${productId}/images/${imageId}`).then((r) => r.data),
+  bulkDelete: (ids: number[]) => api.post("/products/bulk-delete", { ids }).then((r) => r.data),
+  export: (filters?: ProductFilters) => api.get("/products/export", { params: filters, responseType: "blob" }).then((r) => r.data),
 };
 
 export interface OrderFilters {
@@ -38,6 +42,9 @@ export const ordersApi = {
   get: (id: number) => api.get(`/orders/${id}`).then((r) => r.data),
   updateStatus: (id: number, status: string, comment?: string) =>
     api.post(`/orders/${id}/status`, { status, comment }).then((r) => r.data),
+  bulkUpdateStatus: (ids: number[], status: string) =>
+    api.post("/orders/bulk-status", { ids, status }).then((r) => r.data),
+  export: (filters?: OrderFilters) => api.get("/orders/export", { params: filters, responseType: "blob" }).then((r) => r.data),
 };
 
 export interface CustomerFilters { search?: string; is_active?: boolean; page?: number; per_page?: number; }
@@ -112,4 +119,9 @@ export const bannersApi = {
   create: (data: FormData) => api.post("/banners", data, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data),
   update: (id: number, data: FormData) => api.post(`/banners/${id}`, data, { params: { _method: "PUT" }, headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data),
   delete: (id: number) => api.delete(`/banners/${id}`).then((r) => r.data),
+};
+
+export const activityLogApi = {
+  list: (filters?: { search?: string; action?: string; date_from?: string; date_to?: string; page?: number }) =>
+    api.get("/activity-logs", { params: filters }).then((r) => r.data),
 };

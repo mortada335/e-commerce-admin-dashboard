@@ -33,7 +33,11 @@ class CouponController extends Controller
 
     public function store(StoreCouponRequest $request): JsonResponse
     {
-        $coupon = Coupon::create($request->validated());
+        $data = $request->validated();
+        if (isset($data['code'])) {
+            $data['code'] = strtoupper($data['code']);
+        }
+        $coupon = Coupon::create($data);
         return response()->json(new CouponResource($coupon), 201);
     }
 
@@ -54,6 +58,13 @@ class CouponController extends Controller
 
     public function destroy(Coupon $coupon): JsonResponse
     {
+        // Guard: prevent deleting coupons used by orders
+        if ($coupon->orders()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete a coupon that has been used in orders. Deactivate it instead.',
+            ], 422);
+        }
+
         $coupon->delete();
         return response()->json(['message' => 'Coupon deleted.']);
     }

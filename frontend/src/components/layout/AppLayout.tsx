@@ -20,7 +20,9 @@ export function AppLayout() {
       <div
         className={cn(
           "flex flex-1 flex-col overflow-hidden transition-all duration-300",
-          sidebarOpen ? "lg:ml-64" : "lg:ml-16"
+          // Mobile: no margin (sidebar is overlay drawer)
+          // Desktop: margin matches sidebar width
+          sidebarOpen ? "ml-0 lg:ml-64" : "ml-0 lg:ml-16"
         )}
       >
         <Topbar />

@@ -1,11 +1,12 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { dashboardApi } from "@/lib/api";
+import { dashboardApi, inventoryApi } from "@/lib/api";
 import { formatCurrency, formatDate, formatRelativeDate, getStatusColor } from "@/lib/utils";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar,
 } from "recharts";
 import {
-  DollarSign, ShoppingCart, Users, Package, TrendingUp, TrendingDown, AlertTriangle,
+  DollarSign, ShoppingCart, Users, Package, TrendingUp, TrendingDown, AlertTriangle, Calendar,
 } from "lucide-react";
 
 function StatCard({
@@ -47,15 +48,18 @@ function Skeleton({ className = "" }: { className?: string }) {
 }
 
 export default function DashboardPage() {
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn: dashboardApi.stats,
+    queryKey: ["dashboard-stats", dateFrom, dateTo],
+    queryFn: () => dashboardApi.stats(dateFrom || undefined, dateTo || undefined),
     staleTime: 60_000,
   });
 
   const { data: chart, isLoading: chartLoading } = useQuery({
-    queryKey: ["sales-chart", 30],
-    queryFn: () => dashboardApi.salesChart(30),
+    queryKey: ["sales-chart", 30, dateFrom, dateTo],
+    queryFn: () => dashboardApi.salesChart(30, dateFrom || undefined, dateTo || undefined),
     staleTime: 120_000,
   });
 
@@ -69,8 +73,44 @@ export default function DashboardPage() {
     queryFn: () => dashboardApi.topProducts(5),
   });
 
+  const { data: lowStockData } = useQuery({
+    queryKey: ["inventory-alerts"],
+    queryFn: inventoryApi.alerts,
+    staleTime: 120_000,
+  });
+
   return (
     <div className="space-y-6">
+      {/* Header with Date Range Picker */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Dashboard</h2>
+          <p className="text-sm text-muted-foreground">Overview of your store performance</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-muted-foreground" />
+          <input
+            type="date" value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="px-2 py-1.5 rounded-lg bg-card border border-border text-sm outline-none text-foreground"
+          />
+          <span className="text-muted-foreground text-xs">to</span>
+          <input
+            type="date" value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="px-2 py-1.5 rounded-lg bg-card border border-border text-sm outline-none text-foreground"
+          />
+          {(dateFrom || dateTo) && (
+            <button
+              onClick={() => { setDateFrom(""); setDateTo(""); }}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {statsLoading ? (
@@ -192,6 +232,32 @@ export default function DashboardPage() {
           </table>
         </div>
       </div>
+
+      {/* Low Stock Alerts */}
+      {lowStockData?.products?.length > 0 && (
+        <div className="glass rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle className="w-4 h-4 text-red-400" />
+            <h2 className="text-sm font-semibold text-foreground">Low Stock Alerts ({lowStockData.count})</h2>
+          </div>
+          <div className="space-y-3">
+            {lowStockData.products.map((item: any) => (
+              <div key={item.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{item.name}</p>
+                  <p className="text-xs text-muted-foreground">{item.sku} · {item.category?.name ?? "Uncategorized"}</p>
+                </div>
+                <div className="text-right">
+                  <p className={`text-sm font-bold ${item.stock_quantity === 0 ? "text-red-400" : "text-yellow-400"}`}>
+                    {item.stock_quantity} left
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">Threshold: {item.low_stock_threshold}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

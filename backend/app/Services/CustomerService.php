@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\ActivityLog;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\ValidationException;
 
 class CustomerService
 {
@@ -49,6 +50,13 @@ class CustomerService
 
     public function delete(Customer $customer): void
     {
+        // Guard: prevent deleting customers with order history
+        if ($customer->orders()->exists()) {
+            throw ValidationException::withMessages([
+                'customer' => ['Cannot delete a customer with existing orders. Deactivate the customer instead.'],
+            ]);
+        }
+
         ActivityLog::record('customer_deleted', $customer);
         $customer->delete();
     }

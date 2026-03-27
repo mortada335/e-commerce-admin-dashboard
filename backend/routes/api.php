@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\BannerController;
+use App\Http\Controllers\Api\ActivityLogController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +35,8 @@ Route::prefix('v1')->group(function () {
         });
 
         // Products
+        Route::post('/products/bulk-delete', [ProductController::class, 'bulkDelete']);
+        Route::get('/products/export', [ProductController::class, 'export']);
         Route::apiResource('products', ProductController::class);
         Route::post('/products/{product}/images', [ProductController::class, 'uploadImages']);
         Route::delete('/products/{product}/images/{imageId}', [ProductController::class, 'deleteImage']);
@@ -44,6 +47,8 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('brands', BrandController::class);
 
         // Orders
+        Route::post('/orders/bulk-status', [OrderController::class, 'bulkUpdateStatus']);
+        Route::get('/orders/export', [OrderController::class, 'export']);
         Route::apiResource('orders', OrderController::class)->only(['index', 'show', 'update']);
         Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus']);
 
@@ -59,13 +64,18 @@ Route::prefix('v1')->group(function () {
         Route::get('/inventory', [InventoryController::class, 'index']);
         Route::get('/inventory/alerts', [InventoryController::class, 'alerts']);
         Route::patch('/inventory/{product}/stock', [InventoryController::class, 'updateStock']);
+
         // Settings, Reviews, Banners
         Route::apiResource('reviews', ReviewController::class);
         Route::post('/reviews/{review}/toggle-approval', [ReviewController::class, 'toggleApproval']);
         Route::apiResource('banners', BannerController::class);
+
         // Settings
         Route::get('/settings', [SettingController::class, 'index']);
         Route::put('/settings', [SettingController::class, 'update']);
+
+        // Activity Logs
+        Route::get('/activity-logs', [ActivityLogController::class, 'index']);
 
         // Notifications
         Route::get('/notifications', fn (Request $request) =>
@@ -82,3 +92,4 @@ Route::prefix('v1')->group(function () {
         });
     });
 });
+
