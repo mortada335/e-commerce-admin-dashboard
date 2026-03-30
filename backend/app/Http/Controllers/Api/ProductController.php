@@ -92,7 +92,12 @@ class ProductController extends Controller
 
         return response()->streamDownload(function () use ($products) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['ID', 'Name', 'SKU', 'Category', 'Price', 'Discount Price', 'Stock', 'Status', 'Featured', 'Created At']);
+            fputcsv($handle, [
+                'ID', 'Name', 'SKU', 'Category', 'Brand', 'Price', 'Discount Price',
+                'Discount Start', 'Discount Expiry', 'Discount Remaining Qty',
+                'Stock', 'Max Cart Qty', 'Status', 'Featured', 'New', 'Enabled',
+                'Notes', 'Created At',
+            ]);
 
             foreach ($products->items() as $product) {
                 fputcsv($handle, [
@@ -100,17 +105,65 @@ class ProductController extends Controller
                     $product->name,
                     $product->sku,
                     $product->category?->name ?? '',
+                    $product->brand?->name ?? '',
                     $product->price,
                     $product->discount_price ?? '',
+                    $product->discount_start_date?->toDateTimeString() ?? '',
+                    $product->discount_expiry_date?->toDateTimeString() ?? '',
+                    $product->discount_remaining_qty ?? '',
                     $product->stock_quantity,
+                    $product->max_cart_quantity,
                     $product->status,
                     $product->is_featured ? 'Yes' : 'No',
+                    $product->is_new ? 'Yes' : 'No',
+                    $product->is_enabled ? 'Yes' : 'No',
+                    $product->notes ?? '',
                     $product->created_at->toDateTimeString(),
                 ]);
             }
             fclose($handle);
         }, 'products-' . now()->format('Y-m-d') . '.csv', [
             'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    public function stats(): JsonResponse
+    {
+        $total    = Product::count();
+        $active   = Product::where('status', 'active')->count();
+        $inactive = Product::where('status', 'inactive')->count();
+        $draft    = Product::where('status', 'draft')->count();
+        $outOfStock = Product::where('stock_quantity', '<=', 0)->count();
+        $lowStock = Product::where('status', 'active')
+            ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
+        $avgPrice = Product::avg('price');
+        $featured = Product::where('is_featured', true)->count();
+
+        return response()->json([
+            'total'        => $total,
+            'active'       => $active,
+            'inactive'     => $inactive,
+            'draft'        => $draft,
+            'out_of_stock' => $outOfStock,
+            'low_stock'    => $lowStock,
+            'featured'     => $featured,
+            'avg_price'    => round($avgPrice ?? 0, 2),
+        ]);
+    }
+
+    public function bulkUpdateStatus(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids'    => 'required|array|min:1|max:100',
+            'ids.*'  => 'integer|exists:products,id',
+            'status' => 'required|in:active,inactive,draft',
+        ]);
+
+        $count = Product::whereIn('id', $request->ids)->update(['status' => $request->status]);
+
+        return response()->json([
+            'message' => "{$count} product(s) updated to '{$request->status}'.",
+            'updated' => $count,
         ]);
     }
 }

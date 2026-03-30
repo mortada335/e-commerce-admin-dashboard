@@ -82,4 +82,31 @@ class ReviewController extends Controller
         $review->delete();
         return response()->noContent();
     }
+
+    public function stats()
+    {
+        $total    = Review::count();
+        $pending  = Review::where('is_approved', false)->count();
+        $avgRating = Review::avg('rating');
+
+        $distribution = Review::selectRaw('rating, COUNT(*) as count')
+            ->groupBy('rating')
+            ->orderBy('rating')
+            ->pluck('count', 'rating')
+            ->toArray();
+
+        return response()->json([
+            'total'        => $total,
+            'pending'      => $pending,
+            'approved'     => $total - $pending,
+            'avg_rating'   => round($avgRating ?? 0, 1),
+            'distribution' => [
+                '5' => $distribution[5] ?? 0,
+                '4' => $distribution[4] ?? 0,
+                '3' => $distribution[3] ?? 0,
+                '2' => $distribution[2] ?? 0,
+                '1' => $distribution[1] ?? 0,
+            ],
+        ]);
+    }
 }

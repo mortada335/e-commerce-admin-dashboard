@@ -151,4 +151,60 @@ class DashboardService
             ->limit($limit)
             ->get();
     }
+
+    public function getOrderStatusSummary(): array
+    {
+        $statuses = Order::selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        $paymentStatuses = Order::selectRaw('payment_status, COUNT(*) as count')
+            ->groupBy('payment_status')
+            ->pluck('count', 'payment_status')
+            ->toArray();
+
+        return [
+            'by_status'         => $statuses,
+            'by_payment_status' => $paymentStatuses,
+            'total'             => array_sum($statuses),
+        ];
+    }
+
+    public function getNewCustomers(int $days = 30): array
+    {
+        $data = Customer::where('created_at', '>=', now()->subDays($days))
+            ->selectRaw("DATE(created_at) as date, COUNT(*) as count")
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        return [
+            'total_new' => $data->sum('count'),
+            'daily'     => $data->map(fn ($row) => [
+                'date'  => $row->date,
+                'count' => $row->count,
+            ])->values()->toArray(),
+        ];
+    }
+
+    public function getRevenueByCategory(): array
+    {
+        $data = DB::table('order_items')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.payment_status', 'paid')
+            ->selectRaw('categories.id, categories.name, SUM(order_items.subtotal) as revenue, COUNT(DISTINCT orders.id) as orders_count')
+            ->groupBy('categories.id', 'categories.name')
+            ->orderByDesc('revenue')
+            ->get();
+
+        return $data->map(fn ($row) => [
+            'category_id'  => $row->id,
+            'category_name'=> $row->name,
+            'revenue'      => round($row->revenue, 2),
+            'orders_count' => $row->orders_count,
+        ])->values()->toArray();
+    }
 }

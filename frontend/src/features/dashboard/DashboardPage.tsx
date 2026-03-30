@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { dashboardApi, inventoryApi } from "@/lib/api";
 import { formatCurrency, formatDate, formatRelativeDate, getStatusColor } from "@/lib/utils";
 import {
@@ -7,6 +8,7 @@ import {
 } from "recharts";
 import {
   DollarSign, ShoppingCart, Users, Package, TrendingUp, TrendingDown, AlertTriangle, Calendar,
+  PieChart as PieChartIcon, Layers,
 } from "lucide-react";
 
 function StatCard({
@@ -48,6 +50,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -76,6 +79,18 @@ export default function DashboardPage() {
   const { data: lowStockData } = useQuery({
     queryKey: ["inventory-alerts"],
     queryFn: inventoryApi.alerts,
+    staleTime: 120_000,
+  });
+
+  const { data: orderStatusSummary } = useQuery({
+    queryKey: ["order-status-summary"],
+    queryFn: dashboardApi.orderStatusSummary,
+    staleTime: 120_000,
+  });
+
+  const { data: revenueByCategory } = useQuery({
+    queryKey: ["revenue-by-category"],
+    queryFn: dashboardApi.revenueByCategory,
     staleTime: 120_000,
   });
 
@@ -207,7 +222,7 @@ export default function DashboardPage() {
             </thead>
             <tbody className="divide-y divide-border/50">
               {recentOrders ? recentOrders.map((order: Record<string, unknown>) => (
-                <tr key={order.id as number} className="hover:bg-accent/30 transition-colors">
+                <tr key={order.id as number} className="hover:bg-accent/30 transition-colors cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)}>
                   <td className="py-3 font-mono text-xs text-primary">{order.order_number as string}</td>
                   <td className="py-3 text-foreground">{(order.customer as Record<string, string> | null)?.full_name ?? "—"}</td>
                   <td className="py-3">
@@ -230,6 +245,68 @@ export default function DashboardPage() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Order Status Summary + Revenue by Category */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        {/* Order Status Summary */}
+        <div className="glass rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <PieChartIcon className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">Order Status Summary</h2>
+          </div>
+          {orderStatusSummary ? (
+            <div className="space-y-3">
+              {Object.entries(orderStatusSummary.by_status || {}).map(([status, count]: [string, any]) => {
+                const total = orderStatusSummary.total || 1;
+                const pct = ((count / total) * 100).toFixed(0);
+                return (
+                  <div key={status} className="flex items-center gap-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium min-w-[80px] text-center ${getStatusColor(status)}`}>
+                      {status}
+                    </span>
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-foreground min-w-[40px] text-right">{count}</span>
+                    <span className="text-xs text-muted-foreground min-w-[30px] text-right">{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : <Skeleton className="h-32" />}
+        </div>
+
+        {/* Revenue by Category */}
+        <div className="glass rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Layers className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">Revenue by Category</h2>
+          </div>
+          {revenueByCategory ? (
+            <div className="space-y-3">
+              {(Array.isArray(revenueByCategory) ? revenueByCategory : []).slice(0, 8).map((item: any) => {
+                const maxRevenue = Math.max(...(Array.isArray(revenueByCategory) ? revenueByCategory : []).map((i: any) => i.revenue || 0));
+                const pct = maxRevenue > 0 ? ((item.revenue / maxRevenue) * 100).toFixed(0) : 0;
+                return (
+                  <div key={item.category_id} className="flex items-center gap-3">
+                    <span className="text-xs text-foreground font-medium min-w-[100px] truncate">{item.category_name}</span>
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-emerald-400/70 transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-foreground min-w-[70px] text-right">{formatCurrency(item.revenue)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : <Skeleton className="h-32" />}
         </div>
       </div>
 

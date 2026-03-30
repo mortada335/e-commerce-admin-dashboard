@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { reviewsApi } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
-import { Search, Edit, Trash2, Star, ChevronLeft, ChevronRight, CheckCircle, XCircle } from "lucide-react";
+import { Search, Edit, Trash2, Star, ChevronLeft, ChevronRight, CheckCircle, XCircle, MessageSquare, Clock, TrendingUp } from "lucide-react";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -16,6 +16,11 @@ export default function ReviewsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["reviews", { isApproved, page }],
     queryFn: () => reviewsApi.list({ is_approved: isApproved ? isApproved === "true" : undefined, page }),
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ["reviews-stats"],
+    queryFn: () => reviewsApi.stats(),
   });
 
   const toggleMutation = useMutation({
@@ -48,6 +53,34 @@ export default function ReviewsPage() {
         <div>
           <h2 className="text-xl font-bold text-foreground">Customer Reviews</h2>
           <p className="text-sm text-muted-foreground">{meta?.total ?? 0} total reviews</p>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageSquare className="w-4 h-4 text-primary" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total Reviews</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats?.total ?? 0}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-4 h-4 text-yellow-500" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Pending Approval</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats?.pending ?? 0}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Average Rating</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <p className="text-2xl font-bold text-foreground">{stats?.avg_rating ? Number(stats.avg_rating).toFixed(1) : "0.0"}</p>
+            {stats?.avg_rating && renderStars(Math.round(Number(stats.avg_rating)))}
+          </div>
         </div>
       </div>
 

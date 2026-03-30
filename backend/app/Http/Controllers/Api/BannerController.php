@@ -14,7 +14,7 @@ class BannerController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Banner::query();
+        $query = Banner::with('products');
 
         if ($request->has('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
@@ -29,13 +29,23 @@ class BannerController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'image' => 'required|image|max:2048',
-            'link' => 'nullable|string|max:255',
-            'target' => 'required|string|in:_self,_blank',
-            'is_active' => 'boolean',
-            'sort_order' => 'integer',
+            'title'          => 'required|string|max:255',
+            'image'          => 'required|image|max:2048',
+            'link'           => 'nullable|string|max:255',
+            'target'         => 'required|string|in:_self,_blank',
+            'is_active'      => 'boolean',
+            'sort_order'     => 'integer',
+            'banner_type'    => 'nullable|string|max:50',
+            'banner_type_id' => 'nullable|string|max:50',
+            'event_date'     => 'nullable|date',
+            'event_date_end' => 'nullable|date|after_or_equal:event_date',
+            'event_title'    => 'nullable|string|max:255',
+            'product_ids'    => 'nullable|array',
+            'product_ids.*'  => 'integer|exists:products,id',
         ]);
+
+        $productIds = $validated['product_ids'] ?? [];
+        unset($validated['product_ids']);
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('banners', 'public');
@@ -43,7 +53,11 @@ class BannerController extends Controller
 
         $banner = Banner::create($validated);
 
-        return response()->json($banner, 201);
+        if (!empty($productIds)) {
+            $banner->products()->sync($productIds);
+        }
+
+        return response()->json($banner->load('products'), 201);
     }
 
     /**
@@ -51,6 +65,7 @@ class BannerController extends Controller
      */
     public function show(Banner $banner)
     {
+        $banner->load('products');
         return response()->json($banner);
     }
 
@@ -60,13 +75,23 @@ class BannerController extends Controller
     public function update(Request $request, Banner $banner)
     {
         $validated = $request->validate([
-            'title' => 'sometimes|required|string|max:255',
-            'image' => 'nullable|image|max:2048',
-            'link' => 'nullable|string|max:255',
-            'target' => 'sometimes|required|string|in:_self,_blank',
-            'is_active' => 'boolean',
-            'sort_order' => 'integer',
+            'title'          => 'sometimes|required|string|max:255',
+            'image'          => 'nullable|image|max:2048',
+            'link'           => 'nullable|string|max:255',
+            'target'         => 'sometimes|required|string|in:_self,_blank',
+            'is_active'      => 'boolean',
+            'sort_order'     => 'integer',
+            'banner_type'    => 'nullable|string|max:50',
+            'banner_type_id' => 'nullable|string|max:50',
+            'event_date'     => 'nullable|date',
+            'event_date_end' => 'nullable|date|after_or_equal:event_date',
+            'event_title'    => 'nullable|string|max:255',
+            'product_ids'    => 'nullable|array',
+            'product_ids.*'  => 'integer|exists:products,id',
         ]);
+
+        $productIds = $validated['product_ids'] ?? null;
+        unset($validated['product_ids']);
 
         if ($request->hasFile('image')) {
             if ($banner->image) Storage::disk('public')->delete($banner->image);
@@ -75,7 +100,11 @@ class BannerController extends Controller
 
         $banner->update($validated);
 
-        return response()->json($banner);
+        if ($productIds !== null) {
+            $banner->products()->sync($productIds);
+        }
+
+        return response()->json($banner->load('products'));
     }
 
     /**

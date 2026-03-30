@@ -16,7 +16,7 @@ class BrandController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Brand::query();
+        $query = Brand::withCount('products');
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -60,6 +60,7 @@ class BrandController extends Controller
      */
     public function show(Brand $brand)
     {
+        $brand->loadCount('products');
         return response()->json($brand);
     }
 
@@ -98,5 +99,30 @@ class BrandController extends Controller
         $brand->delete();
 
         return response()->noContent();
+    }
+
+    public function export()
+    {
+        $brands = Brand::withCount('products')->orderBy('name')->get();
+
+        return response()->streamDownload(function () use ($brands) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['ID', 'Name', 'Slug', 'Active', 'Products', 'Sort Order', 'Created At']);
+
+            foreach ($brands as $b) {
+                fputcsv($handle, [
+                    $b->id,
+                    $b->name,
+                    $b->slug,
+                    $b->is_active ? 'Yes' : 'No',
+                    $b->products_count,
+                    $b->sort_order,
+                    $b->created_at->toDateTimeString(),
+                ]);
+            }
+            fclose($handle);
+        }, 'brands-' . now()->format('Y-m-d') . '.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
     }
 }

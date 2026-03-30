@@ -18,17 +18,25 @@ class Product extends Model
         'brand_id',
         'name', 'slug', 'description', 'short_description',
         'price', 'discount_price', 'sku', 'stock_quantity', 'low_stock_threshold',
-        'status', 'is_featured', 'weight', 'meta',
+        'max_cart_quantity', 'status', 'is_featured', 'is_new', 'is_enabled',
+        'weight', 'meta', 'notes',
+        'discount_start_date', 'discount_expiry_date', 'discount_remaining_qty',
     ];
 
     protected $casts = [
-        'price'              => 'decimal:2',
-        'discount_price'     => 'decimal:2',
-        'weight'             => 'decimal:2',
-        'stock_quantity'     => 'integer',
-        'low_stock_threshold'=> 'integer',
-        'is_featured'        => 'boolean',
-        'meta'               => 'array',
+        'price'                => 'decimal:2',
+        'discount_price'       => 'decimal:2',
+        'weight'               => 'decimal:2',
+        'stock_quantity'       => 'integer',
+        'low_stock_threshold'  => 'integer',
+        'max_cart_quantity'    => 'integer',
+        'is_featured'          => 'boolean',
+        'is_new'               => 'boolean',
+        'is_enabled'           => 'boolean',
+        'meta'                 => 'array',
+        'discount_start_date'  => 'datetime',
+        'discount_expiry_date' => 'datetime',
+        'discount_remaining_qty' => 'integer',
     ];
 
     protected static function boot(): void

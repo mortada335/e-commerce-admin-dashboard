@@ -11,10 +11,14 @@ class Brand extends Model
         'slug',
         'logo',
         'is_active',
+        'sort_order',
+        'noindex',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'is_active'  => 'boolean',
+        'sort_order' => 'integer',
+        'noindex'    => 'boolean',
     ];
 
     public function products()

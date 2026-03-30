@@ -33,7 +33,11 @@ class CategoryController extends Controller
 
     public function tree(): JsonResponse
     {
-        $categories = Category::with('children.children')->whereNull('parent_id')->orderBy('sort_order')->get();
+        $categories = Category::withCount('products')
+            ->with(['children' => fn ($q) => $q->withCount('products')->with(['children' => fn ($q2) => $q2->withCount('products')])])
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->get();
         return response()->json(CategoryResource::collection($categories));
     }
 
@@ -76,5 +80,31 @@ class CategoryController extends Controller
     {
         $category->delete();
         return response()->json(['message' => 'Category deleted.']);
+    }
+
+    public function export(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $categories = Category::withCount('products')->with('parent')->orderBy('sort_order')->get();
+
+        return response()->streamDownload(function () use ($categories) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['ID', 'Name', 'Slug', 'Parent', 'Active', 'Products', 'Sort Order', 'Created At']);
+
+            foreach ($categories as $c) {
+                fputcsv($handle, [
+                    $c->id,
+                    $c->name,
+                    $c->slug,
+                    $c->parent?->name ?? '',
+                    $c->is_active ? 'Yes' : 'No',
+                    $c->products_count,
+                    $c->sort_order,
+                    $c->created_at->toDateTimeString(),
+                ]);
+            }
+            fclose($handle);
+        }, 'categories-' . now()->format('Y-m-d') . '.csv', [
+            'Content-Type' => 'text/csv',
+        ]);
     }
 }

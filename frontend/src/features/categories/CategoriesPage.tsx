@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { categoriesApi } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
-import { Search, Plus, Edit, Trash2, FolderTree, Image as ImageIcon, X } from "lucide-react";
+import { Search, Plus, Edit, Trash2, FolderTree, Image as ImageIcon, X, Download } from "lucide-react";
+import { toast } from "sonner";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -42,12 +43,28 @@ export default function CategoriesPage() {
           <h2 className="text-xl font-bold text-foreground">Categories</h2>
           <p className="text-sm text-muted-foreground">{categories.length} total categories</p>
         </div>
-        <button
-          onClick={() => { setEditingCategory(null); setShowForm(true); }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Add Category
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              try {
+                const blob = await categoriesApi.export();
+                const url = URL.createObjectURL(new Blob([blob]));
+                const a = document.createElement("a");
+                a.href = url; a.download = `categories-${new Date().toISOString().split("T")[0]}.csv`;
+                a.click(); URL.revokeObjectURL(url);
+              } catch { toast.error("Export failed"); }
+            }}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border text-sm font-medium text-foreground hover:bg-accent transition-colors"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+          <button
+            onClick={() => { setEditingCategory(null); setShowForm(true); }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Add Category
+          </button>
+        </div>
       </div>
 
       {showForm && (

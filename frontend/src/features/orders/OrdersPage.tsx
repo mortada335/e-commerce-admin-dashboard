@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { ordersApi } from "@/lib/api";
 import { formatCurrency, formatDate, formatRelativeDate, getStatusColor } from "@/lib/utils";
-import { Search, ShoppingCart, ChevronLeft, ChevronRight, Eye, Download, Calendar } from "lucide-react";
+import { Search, ShoppingCart, ChevronLeft, ChevronRight, Eye, Download, Calendar, DollarSign, TrendingUp, Users } from "lucide-react";
 import { toast } from "sonner";
 
 function Skeleton({ className = "" }: { className?: string }) {
@@ -13,18 +14,23 @@ const ORDER_STATUSES = ["pending", "processing", "shipped", "delivered", "cancel
 
 export default function OrdersPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
-  const [viewingOrder, setViewingOrder] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [bulkStatus, setBulkStatus] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["orders", { search, status, dateFrom, dateTo, page }],
     queryFn: () => ordersApi.list({ search, status, date_from: dateFrom || undefined, date_to: dateTo || undefined, page }),
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ["orders-stats"],
+    queryFn: () => ordersApi.stats(),
   });
 
   const statusMutation = useMutation({
@@ -88,6 +94,38 @@ export default function OrdersPage() {
         >
           <Download className="w-4 h-4" /> Export CSV
         </button>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <ShoppingCart className="w-4 h-4 text-primary" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total Orders</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats?.total ?? 0}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <DollarSign className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total Revenue</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{formatCurrency(stats?.total_revenue ?? 0)}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-4 h-4 text-blue-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Avg Order Value</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{formatCurrency(stats?.avg_order_value ?? 0)}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="w-4 h-4 text-purple-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Gift Orders</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats?.gift_orders ?? 0}</p>
+        </div>
       </div>
 
       {/* Bulk Action Bar */}
@@ -206,7 +244,7 @@ export default function OrdersPage() {
                   <td className="px-4 py-3 text-muted-foreground text-xs">{formatRelativeDate(o.created_at as string)}</td>
                   <td className="px-4 py-3">
                     <button 
-                      onClick={() => setViewingOrder(o)}
+                      onClick={() => navigate(`/orders/${o.id}`)}
                       className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <Eye className="w-3.5 h-3.5" />
@@ -233,83 +271,6 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
-
-      {/* Order Detail Modal */}
-      {viewingOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-          <div className="glass w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border border-border/50 p-6 relative">
-            <button onClick={() => setViewingOrder(null)} className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-accent text-muted-foreground">
-              <X className="w-4 h-4" />
-            </button>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <ShoppingCart className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold">Order {viewingOrder.order_number}</h3>
-                <p className="text-xs text-muted-foreground">{formatDate(viewingOrder.created_at)}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-8 mb-8 pb-8 border-b border-border/50">
-              <div>
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Customer Info</p>
-                <p className="font-medium">{viewingOrder.customer?.full_name}</p>
-                <p className="text-sm text-muted-foreground">{viewingOrder.customer?.email}</p>
-                <p className="text-sm text-muted-foreground">{viewingOrder.customer?.phone}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Shipping Address</p>
-                <p className="text-sm text-muted-foreground">{viewingOrder.shipping?.address}</p>
-                <p className="text-sm text-muted-foreground">{viewingOrder.shipping?.city}, {viewingOrder.shipping?.state} {viewingOrder.shipping?.zip}</p>
-              </div>
-            </div>
-
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-4">Order Items</p>
-            <div className="space-y-4 mb-8">
-              {viewingOrder.items?.map((item: any) => (
-                <div key={item.id} className="flex items-center justify-between py-1">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-xs font-bold">
-                      {item.product_name?.[0]}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{item.product_name}</p>
-                      <p className="text-xs text-muted-foreground">Qty: {item.quantity} × {formatCurrency(item.unit_price)}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm font-semibold">{formatCurrency(item.subtotal)}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-2 border-t border-border/50 pt-6">
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <p>Subtotal</p>
-                <p>{formatCurrency(viewingOrder.subtotal)}</p>
-              </div>
-              {viewingOrder.discount_amount > 0 && (
-                <div className="flex justify-between text-sm text-red-400">
-                  <p>Discount</p>
-                  <p>- {formatCurrency(viewingOrder.discount_amount)}</p>
-                </div>
-              )}
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <p>Tax</p>
-                <p>{formatCurrency(viewingOrder.tax_amount)}</p>
-              </div>
-              <div className="flex justify-between text-base font-bold text-foreground pt-2">
-                <p>Grand Total</p>
-                <p>{formatCurrency(viewingOrder.total)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-
-const X = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-);

@@ -11,8 +11,9 @@ class Coupon extends Model
     use HasFactory;
 
     protected $fillable = [
-        'code', 'description', 'type', 'value', 'min_order_amount',
-        'max_discount_amount', 'max_uses', 'used_count', 'max_uses_per_user',
+        'code', 'name', 'description', 'type', 'value', 'min_order_amount',
+        'max_discount_amount', 'total_min', 'total_max',
+        'max_uses', 'used_count', 'max_uses_per_user',
         'is_active', 'starts_at', 'expires_at',
     ];
 
@@ -20,6 +21,8 @@ class Coupon extends Model
         'value'              => 'decimal:2',
         'min_order_amount'   => 'decimal:2',
         'max_discount_amount'=> 'decimal:2',
+        'total_min'          => 'decimal:2',
+        'total_max'          => 'decimal:2',
         'max_uses'           => 'integer',
         'used_count'         => 'integer',
         'is_active'          => 'boolean',

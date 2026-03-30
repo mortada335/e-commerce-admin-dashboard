@@ -16,6 +16,9 @@ export const dashboardApi = {
     api.get("/dashboard/sales-chart", { params: { days, from, to } }).then((r) => r.data),
   recentOrders: (limit = 10) => api.get("/dashboard/recent-orders", { params: { limit } }).then((r) => r.data),
   topProducts: (limit = 5) => api.get("/dashboard/top-products", { params: { limit } }).then((r) => r.data),
+  orderStatusSummary: () => api.get("/dashboard/order-status-summary").then((r) => r.data),
+  newCustomers: (days = 30) => api.get("/dashboard/new-customers", { params: { days } }).then((r) => r.data),
+  revenueByCategory: () => api.get("/dashboard/revenue-by-category").then((r) => r.data),
 };
 
 export interface ProductFilters {
@@ -30,6 +33,8 @@ export const productsApi = {
   delete: (id: number) => api.delete(`/products/${id}`).then((r) => r.data),
   deleteImage: (productId: number, imageId: number) => api.delete(`/products/${productId}/images/${imageId}`).then((r) => r.data),
   bulkDelete: (ids: number[]) => api.post("/products/bulk-delete", { ids }).then((r) => r.data),
+  bulkStatus: (ids: number[], status: string) => api.post("/products/bulk-status", { ids, status }).then((r) => r.data),
+  stats: () => api.get("/products/stats").then((r) => r.data),
   export: (filters?: ProductFilters) => api.get("/products/export", { params: filters, responseType: "blob" }).then((r) => r.data),
 };
 
@@ -44,6 +49,7 @@ export const ordersApi = {
     api.post(`/orders/${id}/status`, { status, comment }).then((r) => r.data),
   bulkUpdateStatus: (ids: number[], status: string) =>
     api.post("/orders/bulk-status", { ids, status }).then((r) => r.data),
+  stats: () => api.get("/orders/stats").then((r) => r.data),
   export: (filters?: OrderFilters) => api.get("/orders/export", { params: filters, responseType: "blob" }).then((r) => r.data),
 };
 
@@ -55,6 +61,8 @@ export const customersApi = {
   update: (id: number, data: Record<string, unknown>) => api.put(`/customers/${id}`, data).then((r) => r.data),
   delete: (id: number) => api.delete(`/customers/${id}`).then((r) => r.data),
   orders: (id: number, page = 1) => api.get(`/customers/${id}/orders`, { params: { page } }).then((r) => r.data),
+  stats: () => api.get("/customers/stats").then((r) => r.data),
+  export: () => api.get("/customers/export", { responseType: "blob" }).then((r) => r.data),
 };
 
 export const categoriesApi = {
@@ -64,6 +72,7 @@ export const categoriesApi = {
   create: (data: Record<string, unknown>) => api.post("/categories", data).then((r) => r.data),
   update: (id: number, data: Record<string, unknown>) => api.put(`/categories/${id}`, data).then((r) => r.data),
   delete: (id: number) => api.delete(`/categories/${id}`).then((r) => r.data),
+  export: () => api.get("/categories/export", { responseType: "blob" }).then((r) => r.data),
 };
 
 export const couponsApi = {
@@ -73,13 +82,17 @@ export const couponsApi = {
   create: (data: Record<string, unknown>) => api.post("/coupons", data).then((r) => r.data),
   update: (id: number, data: Record<string, unknown>) => api.put(`/coupons/${id}`, data).then((r) => r.data),
   delete: (id: number) => api.delete(`/coupons/${id}`).then((r) => r.data),
+  stats: () => api.get("/coupons/stats").then((r) => r.data),
 };
 
 export const inventoryApi = {
   list: (filters?: { search?: string; page?: number }) => api.get("/inventory", { params: filters }).then((r) => r.data),
   alerts: () => api.get("/inventory/alerts").then((r) => r.data),
+  stats: () => api.get("/inventory/stats").then((r) => r.data),
+  history: (page = 1) => api.get("/inventory/history", { params: { page } }).then((r) => r.data),
   updateStock: (productId: number, data: { stock_quantity: number; low_stock_threshold?: number }) =>
     api.patch(`/inventory/${productId}/stock`, data).then((r) => r.data),
+  export: () => api.get("/inventory/export", { responseType: "blob" }).then((r) => r.data),
 };
 
 export const settingsApi = {
@@ -100,6 +113,7 @@ export const brandsApi = {
   create: (data: FormData) => api.post("/brands", data, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data),
   update: (id: number, data: FormData) => api.post(`/brands/${id}`, data, { params: { _method: "PUT" }, headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data),
   delete: (id: number) => api.delete(`/brands/${id}`).then((r) => r.data),
+  export: () => api.get("/brands/export", { responseType: "blob" }).then((r) => r.data),
 };
 
 export const reviewsApi = {
@@ -110,6 +124,7 @@ export const reviewsApi = {
   update: (id: number, data: Record<string, unknown>) => api.put(`/reviews/${id}`, data).then((r) => r.data),
   toggleApproval: (id: number) => api.post(`/reviews/${id}/toggle-approval`).then((r) => r.data),
   delete: (id: number) => api.delete(`/reviews/${id}`).then((r) => r.data),
+  stats: () => api.get("/reviews/stats").then((r) => r.data),
 };
 
 export const bannersApi = {

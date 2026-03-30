@@ -37,4 +37,20 @@ class DashboardController extends Controller
         $limit = min((int) request()->get('limit', 5), 50);
         return response()->json($this->service->getTopProducts(max($limit, 1)));
     }
+
+    public function orderStatusSummary(): JsonResponse
+    {
+        return response()->json($this->service->getOrderStatusSummary());
+    }
+
+    public function newCustomers(): JsonResponse
+    {
+        $days = min((int) request()->get('days', 30), 365);
+        return response()->json($this->service->getNewCustomers(max($days, 1)));
+    }
+
+    public function revenueByCategory(): JsonResponse
+    {
+        return response()->json($this->service->getRevenueByCategory());
+    }
 }

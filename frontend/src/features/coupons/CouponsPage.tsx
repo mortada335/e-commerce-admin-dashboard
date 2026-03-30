@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { couponsApi } from "@/lib/api";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import { Search, Plus, Edit, Trash2, Tag, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Tag, ChevronLeft, ChevronRight, X, Ticket, CheckCircle2, Clock, DollarSign } from "lucide-react";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -19,6 +19,11 @@ export default function CouponsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["coupons", { search, isActive, page }],
     queryFn: () => couponsApi.list({ search, is_active: isActive ? isActive === "true" : undefined, page }),
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ["coupons-stats"],
+    queryFn: () => couponsApi.stats(),
   });
 
   const deleteMutation = useMutation({
@@ -55,6 +60,38 @@ export default function CouponsPage() {
           onClose={() => { setShowForm(false); setEditingCoupon(null); }}
         />
       )}
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Ticket className="w-4 h-4 text-primary" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total Coupons</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats?.total ?? 0}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Active</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats?.active ?? 0}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-4 h-4 text-yellow-500" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Expired</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats?.expired ?? 0}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <DollarSign className="w-4 h-4 text-blue-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total Discount G.</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{formatCurrency(stats?.total_discount_distributed ?? 0)}</p>
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">

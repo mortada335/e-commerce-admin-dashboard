@@ -14,11 +14,14 @@ class Category extends Model
 
     protected $fillable = [
         'parent_id', 'name', 'slug', 'description', 'image', 'is_active', 'sort_order',
+        'top', 'column',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'is_active'  => 'boolean',
         'sort_order' => 'integer',
+        'top'        => 'boolean',
+        'column'     => 'integer',
     ];
 
     protected static function boot(): void

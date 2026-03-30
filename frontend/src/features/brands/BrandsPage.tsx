@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { brandsApi } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
-import { Search, Plus, Edit, Trash2, Tag, ChevronLeft, ChevronRight, X, Upload } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Tag, ChevronLeft, ChevronRight, X, Upload, Download } from "lucide-react";
+import { toast } from "sonner";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -37,12 +38,28 @@ export default function BrandsPage() {
           <h2 className="text-xl font-bold text-foreground">Brands</h2>
           <p className="text-sm text-muted-foreground">{meta?.total ?? 0} total brands</p>
         </div>
-        <button
-          onClick={() => { setEditingBrand(null); setShowForm(true); }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Add Brand
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              try {
+                const blob = await brandsApi.export();
+                const url = URL.createObjectURL(new Blob([blob]));
+                const a = document.createElement("a");
+                a.href = url; a.download = `brands-${new Date().toISOString().split("T")[0]}.csv`;
+                a.click(); URL.revokeObjectURL(url);
+              } catch { toast.error("Export failed"); }
+            }}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border text-sm font-medium text-foreground hover:bg-accent transition-colors"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+          <button
+            onClick={() => { setEditingBrand(null); setShowForm(true); }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Add Brand
+          </button>
+        </div>
       </div>
 
       {showForm && (

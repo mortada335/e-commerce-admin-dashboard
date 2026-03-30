@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { inventoryApi } from "@/lib/api";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import { Search, Package, AlertTriangle, CheckCircle2, Save, ArrowRight } from "lucide-react";
+import { Search, Package, AlertTriangle, CheckCircle2, Save, Download, History, X } from "lucide-react";
 import { toast } from "sonner";
 
 function Skeleton({ className = "" }: { className?: string }) {
@@ -25,6 +25,13 @@ export default function InventoryPage() {
     queryFn: () => inventoryApi.alerts(),
   });
 
+  const { data: stats } = useQuery({
+    queryKey: ["inventory-stats"],
+    queryFn: () => inventoryApi.stats(),
+  });
+
+  const [showHistory, setShowHistory] = useState(false);
+
   const updateStockMutation = useMutation({
     mutationFn: ({ productId, data }: { productId: number; data: any }) =>
       inventoryApi.updateStock(productId, data),
@@ -39,29 +46,70 @@ export default function InventoryPage() {
   const filteredInventory = onlyLowStock ? inventory.filter((i: any) => i.is_low_stock) : inventory;
   const meta = data?.meta;
 
+  const handleExport = async () => {
+    try {
+      const blob = await inventoryApi.export();
+      const url = URL.createObjectURL(new Blob([blob]));
+      const a = document.createElement("a");
+      a.href = url; a.download = `inventory-${new Date().toISOString().split("T")[0]}.csv`;
+      a.click(); URL.revokeObjectURL(url);
+    } catch { toast.error("Export failed"); }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header & Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h2 className="text-xl font-bold text-foreground tracking-tight">Stock Management</h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowHistory(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border text-sm font-medium text-foreground hover:bg-accent transition-colors"
+          >
+            <History className="w-4 h-4" /> Activity Log
+          </button>
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border text-sm font-medium text-foreground hover:bg-accent transition-colors"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="glass p-4 rounded-xl space-y-1">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Items</p>
           <div className="flex items-end justify-between">
-            <h4 className="text-2xl font-bold text-foreground">{meta?.total ?? 0}</h4>
+            <h4 className="text-2xl font-bold text-foreground">{stats?.total ?? 0}</h4>
             <Package className="w-5 h-5 text-primary opacity-50" />
           </div>
         </div>
-        <div className={cn("glass p-4 rounded-xl space-y-1 border-l-4", (alerts?.length || 0) > 0 ? "border-l-destructive" : "border-l-emerald-500")}>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Low Stock Alerts</p>
+        <div className="glass p-4 rounded-xl space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Units</p>
           <div className="flex items-end justify-between">
-            <h4 className="text-2xl font-bold text-foreground">{alerts?.length || 0}</h4>
-            {(alerts?.length || 0) > 0 ? <AlertTriangle className="w-5 h-5 text-destructive" /> : <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+            <h4 className="text-2xl font-bold text-foreground">{stats?.total_units?.toLocaleString() ?? 0}</h4>
+            <Package className="w-5 h-5 text-blue-400 opacity-50" />
+          </div>
+        </div>
+        <div className="glass p-4 rounded-xl space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Value</p>
+          <div className="flex items-end justify-between">
+            <h4 className="text-2xl font-bold text-foreground">{formatCurrency(stats?.total_value ?? 0)}</h4>
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 opacity-50" />
+          </div>
+        </div>
+        <div className={cn("glass p-4 rounded-xl space-y-1 border-l-4", (stats?.low_stock || 0) > 0 ? "border-l-destructive" : "border-l-emerald-500")}>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Low Stock</p>
+          <div className="flex items-end justify-between">
+            <h4 className="text-2xl font-bold text-foreground">{stats?.low_stock ?? 0}</h4>
+            {(stats?.low_stock || 0) > 0 ? <AlertTriangle className="w-5 h-5 text-destructive" /> : <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h2 className="text-xl font-bold text-foreground tracking-tight">Stock Management</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
           <label className="flex items-center gap-2 cursor-pointer bg-card border border-border px-3 py-1.5 rounded-lg hover:bg-accent transition-colors">
             <input 
               type="checkbox" checked={onlyLowStock} onChange={(e) => setOnlyLowStock(e.target.checked)}
@@ -114,6 +162,8 @@ export default function InventoryPage() {
           </div>
         </div>
       </div>
+
+      {showHistory && <InventoryHistoryModal onClose={() => setShowHistory(false)} />}
     </div>
   );
 }
@@ -159,5 +209,74 @@ function InventoryRow({ item, onUpdate }: { item: any; onUpdate: (data: any) => 
         </button>
       </td>
     </tr>
+  );
+}
+
+function InventoryHistoryModal({ onClose }: { onClose: () => void }) {
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = useQuery({
+    queryKey: ["inventory-history", page],
+    queryFn: () => inventoryApi.history(page),
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+      <div className="w-full max-w-3xl glass border border-border/50 rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between p-4 border-b border-border/50">
+          <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <History className="w-5 h-5 text-primary" /> Inventory Activity Log
+          </h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="overflow-x-auto rounded-lg border border-border/50">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/30">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Date</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Product</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Change</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">User</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {isLoading ? (
+                  <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">Loading...</td></tr>
+                ) : data?.data?.length === 0 ? (
+                  <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No recent activity</td></tr>
+                ) : (
+                  data?.data?.map((log: any) => (
+                    <tr key={log.id} className="hover:bg-accent/20">
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(log.created_at)}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">{log.product?.name ?? "Unknown"}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 text-xs font-mono">
+                          <span className="text-muted-foreground">{log.old_quantity}</span>
+                          <span className="text-muted-foreground">→</span>
+                          <span className={log.new_quantity > log.old_quantity ? "text-emerald-500 font-bold" : log.new_quantity < log.old_quantity ? "text-red-400 font-bold" : "text-foreground"}>
+                            {log.new_quantity}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{log.user?.first_name ? `${log.user.first_name} ${log.user.last_name}` : "System"}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {data?.meta?.last_page > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 rounded border border-border text-sm hover:bg-accent disabled:opacity-50">Previous</button>
+              <span className="text-sm text-muted-foreground">Page {page} of {data.meta.last_page}</span>
+              <button disabled={page === data.meta.last_page} onClick={() => setPage(page + 1)} className="px-3 py-1.5 rounded border border-border text-sm hover:bg-accent disabled:opacity-50">Next</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi, categoriesApi } from "@/lib/api";
 import { formatCurrency, formatDate, getStatusColor, cn } from "@/lib/utils";
-import { Search, Plus, Edit, Trash2, Package, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Package, ChevronLeft, ChevronRight, Download, Eye, AlertTriangle, DollarSign, CheckCircle2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import ProductForm from "./ProductForm";
 import { toast } from "sonner";
 
@@ -12,6 +13,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 export default function ProductsPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -19,6 +21,12 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [bulkStatus, setBulkStatus] = useState("");
+
+  const { data: stats } = useQuery({
+    queryKey: ["products-stats"],
+    queryFn: () => productsApi.stats(),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["products", { search, status, categoryId, page }],
@@ -41,8 +49,21 @@ export default function ProductsPage() {
       toast.success(data.message);
       setSelectedIds([]);
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-stats"] });
     },
     onError: () => toast.error("Failed to delete selected products."),
+  });
+
+  const bulkStatusMutation = useMutation({
+    mutationFn: ({ ids, status }: { ids: number[]; status: string }) => productsApi.bulkStatus(ids, status),
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setSelectedIds([]);
+      setBulkStatus("");
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-stats"] });
+    },
+    onError: () => toast.error("Failed to update status."),
   });
 
   const products = data?.data ?? [];
@@ -98,6 +119,38 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Package className="w-4 h-4 text-primary" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total Products</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats?.total ?? 0}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Active</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats?.active ?? 0}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-red-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Out of Stock</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{stats?.out_of_stock ?? 0}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <DollarSign className="w-4 h-4 text-blue-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Avg Price</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{formatCurrency(stats?.avg_price ?? 0)}</p>
+        </div>
+      </div>
+
       {showForm && (
         <ProductForm 
           product={editingProduct} 
@@ -108,18 +161,37 @@ export default function ProductsPage() {
 
       {/* Bulk Action Bar */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/20">
+        <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/20">
           <span className="text-sm font-medium text-foreground">{selectedIds.length} selected</span>
+          
+          <select
+            value={bulkStatus}
+            onChange={(e) => setBulkStatus(e.target.value)}
+            className="px-2 py-1.5 rounded-lg bg-card border border-border text-xs outline-none focus:ring-2 focus:ring-primary/30 text-foreground"
+          >
+            <option value="">Change Status...</option>
+            <option value="active">Active</option>
+            <option value="draft">Draft</option>
+            <option value="archived">Archived</option>
+          </select>
+          <button
+            onClick={() => bulkStatusMutation.mutate({ ids: selectedIds, status: bulkStatus })}
+            disabled={!bulkStatus || bulkStatusMutation.isPending}
+            className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            Apply
+          </button>
+
           <button
             onClick={() => { if (confirm(`Delete ${selectedIds.length} product(s)?`)) bulkDeleteMutation.mutate(selectedIds); }}
             disabled={bulkDeleteMutation.isPending}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors disabled:opacity-50 ml-auto"
           >
-            <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+            <Trash2 className="w-3.5 h-3.5" /> Delete
           </button>
           <button
             onClick={() => setSelectedIds([])}
-            className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             Clear
           </button>
@@ -225,6 +297,12 @@ export default function ProductsPage() {
                     <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(p.created_at as string)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        <button 
+                          onClick={() => navigate(`/products/${p.id}`)}
+                          className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                         <button 
                           onClick={() => { setEditingProduct(p); setShowForm(true); }}
                           className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"

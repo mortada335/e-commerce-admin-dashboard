@@ -38,7 +38,17 @@ class CustomerController extends Controller
     public function show(Customer $customer): JsonResponse
     {
         $customer->load('orders');
-        return response()->json(new CustomerResource($customer));
+        $data = (new CustomerResource($customer))->toArray(request());
+
+        // Enrich with computed stats
+        $data['last_order_date'] = $customer->orders->max('created_at')?->toISOString();
+        $data['avg_order_value'] = $customer->orders->count() > 0
+            ? round($customer->orders->avg('total'), 2)
+            : 0;
+        $data['orders_count'] = $customer->orders->count();
+        $data['total_spent'] = round($customer->orders->sum('total'), 2);
+
+        return response()->json($data);
     }
 
     public function update(StoreCustomerRequest $request, Customer $customer): JsonResponse
@@ -59,6 +69,62 @@ class CustomerController extends Controller
         return response()->json([
             'data' => OrderResource::collection($orders->items()),
             'meta' => ['current_page' => $orders->currentPage(), 'last_page' => $orders->lastPage(), 'total' => $orders->total()],
+        ]);
+    }
+
+    public function stats(): JsonResponse
+    {
+        $total     = Customer::count();
+        $active    = Customer::where('is_active', true)->count();
+        $inactive  = Customer::where('is_active', false)->count();
+        $thisMonth = Customer::where('created_at', '>=', now()->startOfMonth())->count();
+
+        $topSpender = Customer::withSum('orders', 'total')
+            ->orderByDesc('orders_sum_total')
+            ->first();
+
+        $avgOrders = Customer::withCount('orders')->get()->avg('orders_count');
+
+        return response()->json([
+            'total'            => $total,
+            'active'           => $active,
+            'inactive'         => $inactive,
+            'new_this_month'   => $thisMonth,
+            'avg_orders'       => round($avgOrders ?? 0, 1),
+            'top_spender'      => $topSpender ? [
+                'id'         => $topSpender->id,
+                'full_name'  => $topSpender->full_name,
+                'total_spent'=> round($topSpender->orders_sum_total ?? 0, 2),
+            ] : null,
+        ]);
+    }
+
+    public function export(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $customers = Customer::withCount('orders')
+            ->withSum('orders', 'total')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->streamDownload(function () use ($customers) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['ID', 'Name', 'Email', 'Phone', 'Active', 'Orders', 'Total Spent', 'Joined']);
+
+            foreach ($customers as $c) {
+                fputcsv($handle, [
+                    $c->id,
+                    $c->full_name,
+                    $c->email,
+                    $c->phone ?? '',
+                    $c->is_active ? 'Yes' : 'No',
+                    $c->orders_count,
+                    round($c->orders_sum_total ?? 0, 2),
+                    $c->created_at->toDateTimeString(),
+                ]);
+            }
+            fclose($handle);
+        }, 'customers-' . now()->format('Y-m-d') . '.csv', [
+            'Content-Type' => 'text/csv',
         ]);
     }
 }

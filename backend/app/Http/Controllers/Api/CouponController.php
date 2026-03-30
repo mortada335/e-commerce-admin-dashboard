@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCouponRequest;
 use App\Http\Resources\CouponResource;
 use App\Models\Coupon;
+use App\Models\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -43,7 +44,15 @@ class CouponController extends Controller
 
     public function show(Coupon $coupon): JsonResponse
     {
-        return response()->json(new CouponResource($coupon));
+        $data = (new CouponResource($coupon))->toArray(request());
+
+        // Enrich with usage stats
+        $data['orders_count'] = Order::where('coupon_id', $coupon->id)->count();
+        $data['total_discount_given'] = round(
+            Order::where('coupon_id', $coupon->id)->sum('discount_amount'), 2
+        );
+
+        return response()->json($data);
     }
 
     public function update(StoreCouponRequest $request, Coupon $coupon): JsonResponse
@@ -87,6 +96,31 @@ class CouponController extends Controller
         return response()->json([
             'coupon'   => new CouponResource($coupon),
             'discount' => $coupon->calculateDiscount($request->subtotal),
+        ]);
+    }
+
+    public function stats(): JsonResponse
+    {
+        $total    = Coupon::count();
+        $active   = Coupon::where('is_active', true)->count();
+        $expired  = Coupon::where('expires_at', '<', now())->count();
+
+        $mostUsed = Coupon::orderByDesc('used_count')->first();
+
+        $totalDiscountDistributed = round(
+            Order::whereNotNull('coupon_id')->sum('discount_amount'), 2
+        );
+
+        return response()->json([
+            'total'                => $total,
+            'active'               => $active,
+            'expired'              => $expired,
+            'total_discount_given' => $totalDiscountDistributed,
+            'most_used'            => $mostUsed ? [
+                'id'         => $mostUsed->id,
+                'code'       => $mostUsed->code,
+                'used_count' => $mostUsed->used_count,
+            ] : null,
         ]);
     }
 }

@@ -32,9 +32,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/sales-chart', [DashboardController::class, 'salesChart']);
             Route::get('/recent-orders', [DashboardController::class, 'recentOrders']);
             Route::get('/top-products', [DashboardController::class, 'topProducts']);
+            Route::get('/order-status-summary', [DashboardController::class, 'orderStatusSummary']);
+            Route::get('/new-customers', [DashboardController::class, 'newCustomers']);
+            Route::get('/revenue-by-category', [DashboardController::class, 'revenueByCategory']);
         });
 
         // Products
+        Route::get('/products/stats', [ProductController::class, 'stats']);
+        Route::post('/products/bulk-status', [ProductController::class, 'bulkUpdateStatus']);
         Route::post('/products/bulk-delete', [ProductController::class, 'bulkDelete']);
         Route::get('/products/export', [ProductController::class, 'export']);
         Route::apiResource('products', ProductController::class);
@@ -43,31 +48,44 @@ Route::prefix('v1')->group(function () {
 
         // Categories & Brands
         Route::get('/categories/tree', [CategoryController::class, 'tree']);
+        Route::get('/categories/export', [CategoryController::class, 'export']);
         Route::apiResource('categories', CategoryController::class);
+        Route::get('/brands/export', [BrandController::class, 'export']);
         Route::apiResource('brands', BrandController::class);
 
         // Orders
+        Route::get('/orders/stats', [OrderController::class, 'stats']);
         Route::post('/orders/bulk-status', [OrderController::class, 'bulkUpdateStatus']);
         Route::get('/orders/export', [OrderController::class, 'export']);
         Route::apiResource('orders', OrderController::class)->only(['index', 'show', 'update']);
         Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus']);
 
         // Customers
+        Route::get('/customers/stats', [CustomerController::class, 'stats']);
+        Route::get('/customers/export', [CustomerController::class, 'export']);
         Route::apiResource('customers', CustomerController::class);
         Route::get('/customers/{customer}/orders', [CustomerController::class, 'orders']);
 
         // Coupons
+        Route::get('/coupons/stats', [CouponController::class, 'stats']);
         Route::post('/coupons/validate', [CouponController::class, 'validate']);
         Route::apiResource('coupons', CouponController::class);
 
         // Inventory
         Route::get('/inventory', [InventoryController::class, 'index']);
+        Route::get('/inventory/stats', [InventoryController::class, 'stats']);
         Route::get('/inventory/alerts', [InventoryController::class, 'alerts']);
+        Route::get('/inventory/history', [InventoryController::class, 'history']);
+        Route::get('/inventory/export', [InventoryController::class, 'export']);
+        Route::post('/inventory/bulk-update', [InventoryController::class, 'bulkUpdate']);
         Route::patch('/inventory/{product}/stock', [InventoryController::class, 'updateStock']);
 
-        // Settings, Reviews, Banners
+        // Reviews
+        Route::get('/reviews/stats', [ReviewController::class, 'stats']);
         Route::apiResource('reviews', ReviewController::class);
         Route::post('/reviews/{review}/toggle-approval', [ReviewController::class, 'toggleApproval']);
+
+        // Banners
         Route::apiResource('banners', BannerController::class);
 
         // Settings

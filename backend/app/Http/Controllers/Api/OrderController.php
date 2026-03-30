@@ -83,7 +83,11 @@ class OrderController extends Controller
 
         return response()->streamDownload(function () use ($orders) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Order #', 'Customer', 'Status', 'Payment Status', 'Subtotal', 'Discount', 'Tax', 'Shipping', 'Total', 'Created At']);
+            fputcsv($handle, [
+                'Order #', 'Customer', 'Status', 'Payment Status', 'Payment Method',
+                'Subtotal', 'Discount', 'Coupon Discount', 'Tax', 'Shipping',
+                'Delivery Costs', 'Total', 'Device Type', 'Is Gift', 'Tracking #', 'Created At',
+            ]);
 
             foreach ($orders->items() as $order) {
                 fputcsv($handle, [
@@ -91,17 +95,52 @@ class OrderController extends Controller
                     $order->customer?->full_name ?? 'Guest',
                     $order->status,
                     $order->payment_status,
+                    $order->payment_method ?? '',
                     $order->subtotal,
                     $order->discount_amount,
+                    $order->coupon_discount_value,
                     $order->tax_amount,
                     $order->shipping_amount,
+                    $order->delivery_costs,
                     $order->total,
+                    $order->device_type ?? '',
+                    $order->is_gift ? 'Yes' : 'No',
+                    $order->tracking_number ?? '',
                     $order->created_at->toDateTimeString(),
                 ]);
             }
             fclose($handle);
         }, 'orders-' . now()->format('Y-m-d') . '.csv', [
             'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    public function stats(): JsonResponse
+    {
+        $total = Order::count();
+        $totalRevenue = Order::where('payment_status', 'paid')->sum('total');
+        $avgOrderValue = Order::where('payment_status', 'paid')->avg('total');
+
+        $byPaymentMethod = Order::whereNotNull('payment_method')
+            ->selectRaw('payment_method, COUNT(*) as count')
+            ->groupBy('payment_method')
+            ->pluck('count', 'payment_method');
+
+        $byDeviceType = Order::whereNotNull('device_type')
+            ->where('device_type', '!=', '')
+            ->selectRaw('device_type, COUNT(*) as count')
+            ->groupBy('device_type')
+            ->pluck('count', 'device_type');
+
+        $giftOrders = Order::where('is_gift', true)->count();
+
+        return response()->json([
+            'total'             => $total,
+            'total_revenue'     => round($totalRevenue, 2),
+            'avg_order_value'   => round($avgOrderValue ?? 0, 2),
+            'gift_orders'       => $giftOrders,
+            'by_payment_method' => $byPaymentMethod,
+            'by_device_type'    => $byDeviceType,
         ]);
     }
 }
