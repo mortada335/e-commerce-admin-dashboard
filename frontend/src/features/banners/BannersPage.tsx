@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { bannersApi } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
-import { Search, Plus, Edit, Trash2, Image as ImageIcon, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Image as ImageIcon, ChevronLeft, ChevronRight, X, Eye, CheckCircle2, XCircle, CalendarDays } from "lucide-react";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -10,6 +11,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 export default function BannersPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [isActive, setIsActive] = useState("");
   const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
@@ -42,6 +44,38 @@ export default function BannersPage() {
         >
           <Plus className="w-4 h-4" /> Add Banner
         </button>
+      </div>
+
+      {/* KPI Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <ImageIcon className="w-4 h-4 text-primary" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{meta?.total ?? banners.length}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Active</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{banners.filter((b: any) => b.is_active).length}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <XCircle className="w-4 h-4 text-red-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Inactive</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{banners.filter((b: any) => !b.is_active).length}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CalendarDays className="w-4 h-4 text-orange-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">With Events</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{banners.filter((b: any) => b.event_title || b.event_date).length}</p>
+        </div>
       </div>
 
       {showForm && (
@@ -100,7 +134,9 @@ export default function BannersPage() {
                         <div className="w-24 h-12 rounded bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium">B</div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-medium text-foreground">{b.title}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      <button onClick={() => navigate(`/banners/${b.id}`)} className="text-foreground hover:text-primary transition-colors hover:underline">{b.title}</button>
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{b.link || '—'}</td>
                     <td className="px-4 py-3 text-muted-foreground">{b.sort_order}</td>
                     <td className="px-4 py-3">
@@ -111,6 +147,13 @@ export default function BannersPage() {
                     <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(b.created_at)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => navigate(`/banners/${b.id}`)}
+                          className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-primary transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => { setEditingBanner(b); setShowForm(true); }}
                           className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"

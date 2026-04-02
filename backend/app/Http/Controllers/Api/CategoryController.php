@@ -61,6 +61,7 @@ class CategoryController extends Controller
             'sort_order'  => 'integer',
         ]);
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
+        $data['name'] = strip_tags($data['name']);
         $category = Category::create($data);
         return $this->successResponse(new CategoryResource($category), null, 201);
     }
@@ -87,6 +88,9 @@ class CategoryController extends Controller
             'is_active'   => 'boolean',
             'sort_order'  => 'integer',
         ]);
+        if (isset($data['name'])) {
+            $data['name'] = strip_tags($data['name']);
+        }
         $category->update($data);
         return $this->successResponse(new CategoryResource($category->fresh(['parent'])));
     }

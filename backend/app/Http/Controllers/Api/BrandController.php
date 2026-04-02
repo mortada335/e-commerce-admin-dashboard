@@ -54,6 +54,7 @@ class BrandController extends Controller
             $validated['logo'] = $request->file('logo')->store('brands', config('filesystems.default'));
         }
 
+        $validated['name'] = strip_tags($validated['name']);
         $brand = Brand::create($validated);
 
         return $this->successResponse($brand, null, 201);
@@ -64,6 +65,7 @@ class BrandController extends Controller
      */
     public function show(Brand $brand)
     {
+        $brand->load(['products' => fn ($q) => $q->select('id', 'brand_id', 'name', 'sku', 'price', 'stock_quantity', 'low_stock_threshold', 'status', 'is_enabled')]);
         $brand->loadCount('products');
         return response()->json($brand);
     }
@@ -89,6 +91,9 @@ class BrandController extends Controller
             $validated['logo'] = $request->file('logo')->store('brands', config('filesystems.default'));
         }
 
+        if (isset($validated['name'])) {
+            $validated['name'] = strip_tags($validated['name']);
+        }
         $brand->update($validated);
 
         return response()->json($brand);

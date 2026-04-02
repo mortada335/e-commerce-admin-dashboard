@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { couponsApi } from "@/lib/api";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import { Search, Plus, Edit, Trash2, Tag, ChevronLeft, ChevronRight, X, Ticket, CheckCircle2, Clock, DollarSign } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Tag, ChevronLeft, ChevronRight, X, Ticket, CheckCircle2, Clock, DollarSign, Eye } from "lucide-react";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -10,6 +11,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 export default function CouponsPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [isActive, setIsActive] = useState("");
   const [page, setPage] = useState(1);
@@ -143,7 +145,9 @@ export default function CouponsPage() {
               ) : (
                 coupons.map((c: any) => (
                   <tr key={c.id} className="hover:bg-accent/20 transition-colors">
-                    <td className="px-4 py-3 font-medium text-foreground uppercase">{c.code}</td>
+                    <td className="px-4 py-3 font-medium text-foreground uppercase">
+                      <button onClick={() => navigate(`/coupons/${c.id}`)} className="text-foreground hover:text-primary transition-colors hover:underline font-mono">{c.code}</button>
+                    </td>
                     <td className="px-4 py-3 text-foreground font-semibold">
                       {getDiscountDisplay(c.type, c.value)}
                     </td>
@@ -169,6 +173,13 @@ export default function CouponsPage() {
                     <td className="px-4 py-3 text-muted-foreground text-xs">{c.expires_at ? formatDate(c.expires_at) : "Never"}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => navigate(`/coupons/${c.id}`)}
+                          className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-primary transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => { setEditingCoupon(c); setShowForm(true); }}
                           className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"

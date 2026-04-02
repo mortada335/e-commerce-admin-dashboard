@@ -3,10 +3,10 @@
 # E-Commerce Admin Dashboard
 
 **Project:** E-Commerce Admin Dashboard  
-**Version:** 4.1 (Production-Grade — Post-Implementation Update)  
-**Status:** MVP Complete → Production Hardening  
+**Version:** 4.2 (Production-Grade — Detail Pages & Security Hardening)  
+**Status:** Production Ready  
 **Author:** Mortada  
-**Last Updated:** 2026-04-01  
+**Last Updated:** 2026-04-02  
 **Repository:** [github.com/mortada335/e-commerce-admin-dashboard](https://github.com/mortada335/e-commerce-admin-dashboard)
 
 ---
@@ -132,10 +132,19 @@ The dashboard has a **date range picker** (two `<input type="date">` fields) tha
 
 ### 3.3 Categories (`/categories`)
 
-- Full CRUD table.
+- Full CRUD table with **KPI stats row**: Total, Active, Root Level, Total Products.
 - Supports **parent/child hierarchy**: a category can have a `parent_id` pointing to another category.
 - The API has a special `GET /categories/tree` endpoint that returns the full nested tree structure.
 - Each category has: name, slug (unique), description, image, `is_active` flag, `sort_order`.
+- **Category names are clickable** → navigate to **Category Detail Page** (`/categories/:id`).
+- Eye icon per row for explicit navigation.
+
+**Category Detail Page (`/categories/:id`):**
+- Header: Category name, slug, active status badge, parent breadcrumb.
+- Stats cards: Products count, subcategories count, active status.
+- Product list table: All products in the category with name, SKU, price, stock.
+- Subcategories list: Direct children categories.
+- Metadata: Created/Updated timestamps.
 
 ### 3.4 Orders (`/orders`)
 
@@ -182,8 +191,10 @@ refunded   → (terminal — no further transitions)
 ### 3.6 Inventory (`/inventory`)
 
 - A dedicated page for **rapid stock editing** — separate from the Products page.
-- Table columns: Product name, SKU, Category, Current Stock (editable `<input type="number">`), Low Threshold (editable), Save button.
+- Table columns: Product name (clickable → Product Detail), SKU, Category, Current Stock (editable `<input type="number">`), Low Threshold (editable), Eye button + Save button.
 - The save button is **disabled by default** and **only activates when values differ from the original** (dirty state detection in `InventoryRow` component using React `useState`).
+- **Product names link to Product Detail Page** for quick navigation.
+- **Eye button** per row for explicit product detail navigation.
 - Low-stock rows are highlighted with `bg-destructive/5` background and a pulsing `AlertTriangle` icon.
 - Toggle checkbox: "Show only low stock" filters the list client-side.
 - Stats cards at top: Total Items count, Low Stock Alerts count.
@@ -194,29 +205,69 @@ refunded   → (terminal — no further transitions)
 - Full CRUD table.
 - Coupon fields: Code (unique, uppercase), Type (`fixed` or `percentage`), Value, Minimum Purchase Amount, Usage Limit, Used Count (auto-incremented), Description, Starts At, Expires At, Is Active.
 - Validation endpoint: `POST /coupons/validate` checks if a coupon code is valid (exists, active, not expired, usage limit not reached).
+- **Coupon codes are clickable** → navigate to **Coupon Detail Page** (`/coupons/:id`).
+
+**Coupon Detail Page (`/coupons/:id`):**
+- Header: Coupon code with copy button, active/expired status badge.
+- Stats cards: Usage count with progress bar (used/limit), discount value, validity period.
+- Auto-generated summary: Human-readable description (e.g., "10% off orders over $50").
+- Timeline: Start date → Current → Expiry date with visual progress.
+- Metadata: Created/Updated timestamps.
 
 ### 3.8 Brands (`/brands`)
 
 - Full CRUD table with logo image upload (`multipart/form-data`).
+- **KPI stats row**: Total Brands, Active, Inactive, Total Products.
 - Brand fields: Name, Slug (unique), Logo (file), Description, Is Active.
 - Products reference brands via `brand_id` foreign key.
+- **Brand names are clickable** → navigate to **Brand Detail Page** (`/brands/:id`).
+- Eye icon per row for explicit navigation.
+
+**Brand Detail Page (`/brands/:id`):**
+- Header: Brand name, logo preview, active status badge.
+- Stats cards: Products count, active/inactive breakdown.
+- Product list table: All products under this brand with thumbnails, price, stock.
+- Metadata: Created/Updated timestamps.
 
 ### 3.9 Reviews (`/reviews`)
 
-- Full CRUD table.
+- Full CRUD table with **rating distribution bar chart** (visual breakdown of 1★–5★ reviews).
 - Review fields: Product (dropdown), Customer (dropdown), Rating (1-5), Comment (text), Is Approved (boolean).
 - Special action: `POST /reviews/{id}/toggle-approval` flips the `is_approved` flag and sets/clears `approved_at`.
-- Stats endpoint: `GET /reviews/stats` returns counts of total, approved, pending.
+- Stats endpoint: `GET /reviews/stats` returns counts of total, approved, pending + distribution.
+- **Product names are clickable** → navigate to product detail.
+- Eye icon per row → **Review Detail Page** (`/reviews/:id`).
+
+**Review Detail Page (`/reviews/:id`):**
+- Header: Large star rating display, approval status badge.
+- Reviewer card: Customer name, email, avatar initial.
+- Product card: Product name, image, price — clickable to product detail.
+- Comment text with approve/delete action buttons.
+- Metadata: Created/Updated timestamps.
 
 ### 3.10 Banners (`/banners`)
 
 - Full CRUD table with image upload.
-- Banner fields: Title, Image (file), Link URL, Target (`_self` or `_blank`), Sort Order, Is Active.
+- **KPI stats row**: Total, Active, Inactive, With Events.
+- Banner fields: Title, Image (file), Link URL, Target (`_self` or `_blank`), Sort Order, Is Active, Event Title, Event Date.
 - Used for managing promotional hero sliders on the (future) customer-facing storefront.
+- **Banner titles are clickable** → navigate to **Banner Detail Page** (`/banners/:id`).
+
+**Banner Detail Page (`/banners/:id`):**
+- Header: Banner title, active/inactive badge.
+- Full-width image preview.
+- Event countdown timer (if event_date is set).
+- Linked products grid: Products associated with this banner.
+- Metadata: Link URL, target, sort order, created/updated timestamps.
 
 ### 3.11 Settings (`/settings`)
 
-- A form page (not a table) that reads and writes global store configuration.
+- **Sidebar navigation layout** with icon-decorated group sections (Store, Email, Payment, Shipping, Security, etc.).
+- Each group has a description hint and visual icon.
+- **Search filter** across all settings keys and labels.
+- **Toggle switches** for boolean settings (replacing dropdowns).
+- **"Modified" indicator badges** when a value differs from the saved state.
+- **Sticky save bar** at the bottom for persistent save access.
 - Currently 7 seeded settings:
 
 | Key | Default Value | Group |
@@ -229,17 +280,37 @@ refunded   → (terminal — no further transitions)
 | `free_shipping_threshold` | 100 | shipping |
 | `flat_shipping_rate` | 9.99 | shipping |
 
-- Read: `GET /settings` returns all settings as an array.
+- Read: `GET /settings` returns all settings grouped by category.
 - Write: `PUT /settings` with `{ settings: { key: value, ... } }` updates multiple keys in one request.
+- **Backend validation**: Setting values are limited to `max:10000` characters. Type-based validation enforces boolean/numeric constraints.
 
 ### 3.12 Activity Log (`/activity-log`)
 
-- Read-only paginated table of all admin actions.
-- Each entry shows: Action type, affected model, who did it, when, old values (JSON), new values (JSON).
-- Searchable by action type, date range.
+- Read-only paginated table of all admin actions with **rich visual enhancements**.
+- **KPI stats row**: Total Events, Creates, Updates, Deletes.
+- **Action type filter dropdown**: Filter by Products, Orders, Customers, Stock, Settings, Auth, Reviews.
+- **Color-coded action icons**: Green (creates), Blue (updates), Red (deletes), Yellow (reviews), Purple (settings/permissions).
+- **Type badges**: Visual Created/Updated/Deleted labels with color coding.
+- **User avatars**: Initial-based avatar circles per log entry.
+- **Expandable details**: Eye button to view full property changes.
+- Each entry shows: Action icon, action type, type badge, user avatar + name, entity reference, relative date.
 - Actions are recorded automatically by Services when products/orders/customers are created, updated, or deleted.
 
-### 3.13 Notifications
+### 3.13 Payments (`/payments`)
+
+- **Full transaction tracking page** (rewritten from stub).
+- **KPI stats row**: Total Revenue, Transactions, Avg Transaction, Pending Payments.
+- **Payment method distribution** cards showing counts per method (Stripe, Cash, PayPal, etc.).
+- **Filterable transactions table** with:
+  - Search by order number or customer name
+  - Payment status filter dropdown (Paid, Pending, Failed, Refunded)
+  - Status icons: ✓ (paid), ✗ (failed), ⏳ (pending)
+  - Clickable order numbers → Order Detail Page
+  - Eye button per row
+- Pagination with page info.
+- Data source: Leverages the existing Orders API with `payment_status` filter.
+
+### 3.14 Notifications
 
 - Bell icon in the Topbar with unread count badge.
 - `GET /notifications` returns the authenticated user's unread Laravel notifications.
@@ -537,9 +608,30 @@ Every API endpoint MUST enforce permissions via middleware, not just frontend UI
 #### Input Sanitization
 
 - All text inputs are validated via FormRequest classes (already exists for Products, Customers, Coupons)
-- **XSS Prevention:** All text outputs are escaped by default via Laravel's Blade/JSON encoding. React also auto-escapes JSX output. Description fields that accept rich text MUST use `strip_tags()` or an allowlist-based HTML sanitizer.
-- **SQL Injection:** Mitigated by Eloquent ORM parameterized queries. Raw `DB::raw()` and `whereRaw()` calls (used in search) MUST use parameter binding (currently correct with `?` placeholders).
+- **XSS Prevention:** All text outputs are escaped by default via Laravel's Blade/JSON encoding. React also auto-escapes JSX output (no `dangerouslySetInnerHTML` usage verified). Description fields that accept rich text use `strip_tags()` with an allowlist-based HTML sanitizer.
+- ✅ **Product descriptions**: Sanitized via `strip_tags()` in `StoreProductRequest::prepareForValidation()` and `UpdateProductRequest::prepareForValidation()` with safe HTML tag allowlist.
+- ✅ **Category names**: Sanitized via `strip_tags()` in `CategoryController::store()` and `update()`.
+- ✅ **Category descriptions**: Sanitized via `strip_tags()` with safe tag allowlist in `CategoryController`.
+- ✅ **Brand names**: Sanitized via `strip_tags()` in `BrandController::store()` and `update()`.
+- ✅ **Banner text fields**: `title`, `event_title`, `link` sanitized via `strip_tags()` in `BannerController::store()` and `update()`.
+- ✅ **Review comments**: Sanitized via `strip_tags()` + `max:2000` length limit in `ReviewController::store()` and `update()`.
+- ✅ **Settings values**: Limited to `max:10000` characters with type-based validation (boolean/numeric enforcement).
+- **SQL Injection:** Mitigated by Eloquent ORM parameterized queries. Raw `DB::raw()` and `whereRaw()` calls (used in search) use parameter binding (verified with `?` placeholders).
 - **File Upload:** Restricted to `jpeg,png,webp` with 5MB max per file, 10 files max per request (enforced in `StoreProductRequest`).
+
+#### Security Headers Middleware `[NEW]`
+
+✅ **Implemented:** `App\Http\Middleware\SecurityHeaders` is registered globally on all API responses via `bootstrap/app.php`.
+
+| Header | Value | Purpose |
+|:---|:---|:---|
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing attacks |
+| `X-Frame-Options` | `DENY` | Prevents clickjacking via iframes |
+| `X-XSS-Protection` | `1; mode=block` | Legacy XSS filter for older browsers |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer information leakage |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Disables unnecessary browser APIs |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains; preload` | Enforces HTTPS (production only) |
+| `Content-Security-Policy` | `default-src 'none'; frame-ancestors 'none'` | Restricts resource origins (production only) |
 
 #### Sensitive Data Handling
 
@@ -559,12 +651,13 @@ Every API endpoint MUST enforce permissions via middleware, not just frontend UI
 'supports_credentials' => true,
 
 // Sanctum token config
-'expiration' => 480,        // Tokens expire after 8 hours
+'expiration' => 10080,      // Tokens expire after 1 week (7 × 24 × 60 minutes)
 'token_prefix' => '',
 ```
 
-- ✅ Sanctum tokens now expire after 8 hours (`config/sanctum.php`: `expiration => 480`)
+- ✅ Sanctum tokens expire after **1 week** (`config/sanctum.php`: `expiration => 10080`)
 - ✅ CORS locked down via `config/cors.php` to `env('FRONTEND_URL')` only
+- ✅ Security headers middleware applied globally on all API responses
 - Frontend must handle 401 responses and re-authenticate (already implemented in Axios interceptor)
 
 #### Audit Log Integrity
@@ -631,7 +724,7 @@ Every API endpoint MUST enforce permissions via middleware, not just frontend UI
 
 ```
 frontend/src/
-├── App.tsx                          # Routes definition (14 routes)
+├── App.tsx                          # Routes definition (19 routes)
 ├── components/layout/
 │   ├── AppLayout.tsx                # Auth guard + Sidebar + Topbar + Outlet
 │   ├── Sidebar.tsx                  # 12 nav items, collapsible (256px ↔ 64px)
@@ -649,15 +742,25 @@ frontend/src/
 │   ├── customers/
 │   │   ├── CustomersPage.tsx        # Table + detail modal
 │   │   └── CustomerDetailPage.tsx   # Profile view
-│   ├── inventory/InventoryPage.tsx  # Inline stock editing grid
-│   ├── categories/CategoriesPage.tsx
-│   ├── brands/BrandsPage.tsx
-│   ├── coupons/CouponsPage.tsx
-│   ├── reviews/ReviewsPage.tsx
-│   ├── banners/BannersPage.tsx
-│   ├── settings/SettingsPage.tsx
-│   ├── activity-log/ActivityLogPage.tsx
-│   └── misc/Pages.tsx               # Payments placeholder
+│   ├── inventory/InventoryPage.tsx  # Inline stock editing grid + product links
+│   ├── categories/
+│   │   ├── CategoriesPage.tsx       # Table + KPI stats + navigation
+│   │   └── CategoryDetailPage.tsx   # Hierarchy, products, metadata
+│   ├── brands/
+│   │   ├── BrandsPage.tsx           # Table + KPI stats + navigation
+│   │   └── BrandDetailPage.tsx      # Logo, products list, stats
+│   ├── coupons/
+│   │   ├── CouponsPage.tsx          # Table + navigation
+│   │   └── CouponDetailPage.tsx     # Usage progress, validity timeline
+│   ├── reviews/
+│   │   ├── ReviewsPage.tsx          # Table + rating distribution chart
+│   │   └── ReviewDetailPage.tsx     # Star rating, reviewer/product cards
+│   ├── banners/
+│   │   ├── BannersPage.tsx          # Table + KPI stats + navigation
+│   │   └── BannerDetailPage.tsx     # Image preview, event countdown
+│   ├── settings/SettingsPage.tsx    # Sidebar nav, toggle switches, search
+│   ├── activity-log/ActivityLogPage.tsx  # KPI stats, action type filter, colored icons
+│   └── misc/Pages.tsx               # Full Payments page with transaction tracking
 ├── lib/
 │   ├── api/axios.ts                 # Axios instance with token + 401 interceptors
 │   ├── api/index.ts                 # 143 lines — 13 API modules with TypeScript interfaces
@@ -1239,9 +1342,16 @@ interface PaymentGatewayInterface {
 | ✅ Done | **Category/Brand deletion guards** | Returns 422 if products exist | §6.3 |
 | ✅ Done | **Standardized error envelope** | Consistent `{success, error: {code, message}}` for 401/403/404/422/429 | §6.1 |
 | ✅ Done | **Health check endpoint** | `GET /api/v1/health` (unauthenticated) | §18 |
-| ✅ Done | **Token expiration** | Sanctum tokens expire after 8 hours | §6.2 |
+| ✅ Done | **Token expiration** | Sanctum tokens expire after 1 week | §6.2 |
 | ✅ Done | **Notification classes** | `LowStockNotification` + `NewOrderNotification` (database channel) | §20 |
 | ✅ Done | **Structured JSON logging** | `json` channel in `config/logging.php` with `JsonFormatter` | §18 |
+| ✅ Done | **Security headers middleware** | X-Content-Type-Options, X-Frame-Options, HSTS, Referrer-Policy, CSP | §6.2 |
+| ✅ Done | **Input sanitization (all controllers)** | `strip_tags()` on all text fields across Category, Brand, Banner, Review controllers | §6.2 |
+| ✅ Done | **Detail pages (5 new)** | Category, Brand, Coupon, Review, Banner detail pages with rich data views | §3 |
+| ✅ Done | **Payments page** | Full transaction tracking with KPI stats, filters, and status icons | §3.13 |
+| ✅ Done | **Activity log enrichment** | KPI stats, action type filter, color-coded icons, expandable details | §3.12 |
+| ✅ Done | **Settings page redesign** | Sidebar navigation, toggle switches, search, modified indicators | §3.11 |
+| ✅ Done | **KPI stats (all list pages)** | Categories, Brands, Banners now have stat cards matching existing pages | §3 |
 | 🔴 High | **RBAC in React UI** | Use `hasPermission()` to conditionally render Create/Edit/Delete buttons per role | §2 |
 | 🔴 High | **S3 file storage** | Switch `FILESYSTEM_DISK` to `s3` and configure AWS credentials | §13, §21 |
 | 🟡 Medium | **Standardized success responses** | Wrap all controller success responses in `{success: true, data, meta}` envelope | §6.1 |
@@ -1259,5 +1369,5 @@ interface PaymentGatewayInterface {
 
 ---
 
-*End of Document — E-Commerce Admin Dashboard PRD v4.1 (Production-Grade — Post-Implementation Update)*
+*End of Document — E-Commerce Admin Dashboard PRD v4.2 (Production-Grade — Detail Pages & Security Hardening)*
 

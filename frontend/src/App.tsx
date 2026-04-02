@@ -13,11 +13,16 @@ import OrderDetailPage from "@/features/orders/OrderDetailPage";
 import CustomersPage from "@/features/customers/CustomersPage";
 import CustomerDetailPage from "@/features/customers/CustomerDetailPage";
 import BrandsPage from "@/features/brands/BrandsPage";
+import BrandDetailPage from "@/features/brands/BrandDetailPage";
 import ReviewsPage from "@/features/reviews/ReviewsPage";
+import ReviewDetailPage from "@/features/reviews/ReviewDetailPage";
 import BannersPage from "@/features/banners/BannersPage";
+import BannerDetailPage from "@/features/banners/BannerDetailPage";
 import SettingsPage from "@/features/settings/SettingsPage";
 import CouponsPage from "@/features/coupons/CouponsPage";
+import CouponDetailPage from "@/features/coupons/CouponDetailPage";
 import CategoriesPage from "@/features/categories/CategoriesPage";
+import CategoryDetailPage from "@/features/categories/CategoryDetailPage";
 import InventoryPage from "@/features/inventory/InventoryPage";
 import ActivityLogPage from "@/features/activity-log/ActivityLogPage";
 import { PaymentsPage } from "@/features/misc/Pages";
@@ -64,17 +69,24 @@ function App() {
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/products/:id" element={<ProductDetailPage />} />
               <Route path="/categories" element={<CategoriesPage />} />
+              <Route path="/categories/:id" element={<CategoryDetailPage />} />
               <Route path="/orders" element={<OrdersPage />} />
               <Route path="/orders/:id" element={<OrderDetailPage />} />
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/customers/:id" element={<CustomerDetailPage />} />
               <Route path="/brands" element={<BrandsPage />} />
+              <Route path="/brands/:id" element={<BrandDetailPage />} />
               <Route path="/reviews" element={<ReviewsPage />} />
+              <Route path="/reviews/:id" element={<ReviewDetailPage />} />
               <Route path="/banners" element={<BannersPage />} />
+              <Route path="/banners/:id" element={<BannerDetailPage />} />
               <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/coupons" element={
                 <RequirePermission permission="manage_coupons"><CouponsPage /></RequirePermission>
+              } />
+              <Route path="/coupons/:id" element={
+                <RequirePermission permission="manage_coupons"><CouponDetailPage /></RequirePermission>
               } />
               <Route path="/settings" element={
                 <RequirePermission permission="manage_settings"><SettingsPage /></RequirePermission>

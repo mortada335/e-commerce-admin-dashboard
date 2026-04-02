@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { reviewsApi } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
-import { Search, Edit, Trash2, Star, ChevronLeft, ChevronRight, CheckCircle, XCircle, MessageSquare, Clock, TrendingUp } from "lucide-react";
+import { Search, Edit, Trash2, Star, ChevronLeft, ChevronRight, CheckCircle, XCircle, MessageSquare, Clock, TrendingUp, Eye } from "lucide-react";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -10,6 +11,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 export default function ReviewsPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [isApproved, setIsApproved] = useState("");
   const [page, setPage] = useState(1);
 
@@ -84,6 +86,35 @@ export default function ReviewsPage() {
         </div>
       </div>
 
+      {/* Rating Distribution */}
+      {stats?.distribution && (
+        <div className="glass rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Rating Distribution</h3>
+          <div className="space-y-2">
+            {[5, 4, 3, 2, 1].map((star) => {
+              const count = stats.distribution[String(star)] || 0;
+              const total = stats.total || 1;
+              const pct = Math.round((count / total) * 100);
+              return (
+                <div key={star} className="flex items-center gap-2">
+                  <div className="flex items-center gap-0.5 w-16 flex-shrink-0">
+                    <span className="text-xs text-foreground font-medium w-3">{star}</span>
+                    <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                  </div>
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-yellow-400 transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground w-12 text-right">{count} ({pct}%)</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <select
@@ -127,7 +158,9 @@ export default function ReviewsPage() {
                 reviews.map((r: any) => (
                   <tr key={r.id} className="hover:bg-accent/20 transition-colors">
                     <td className="px-4 py-3 font-medium text-foreground">
-                      {r.product?.name ?? "Unknown Product"}
+                      <button onClick={() => r.product?.id && navigate(`/products/${r.product.id}`)} className="text-foreground hover:text-primary transition-colors hover:underline">
+                        {r.product?.name ?? "Unknown Product"}
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {r.customer ? `${r.customer.first_name} ${r.customer.last_name}` : "Unknown"}
@@ -150,6 +183,13 @@ export default function ReviewsPage() {
                     <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(r.created_at)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        <button
+                          title="View Details"
+                          onClick={() => navigate(`/reviews/${r.id}`)}
+                          className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           title={r.is_approved ? "Revoke Approval" : "Approve Review"}
                           onClick={() => { if (confirm("Toggle approval status?")) toggleMutation.mutate(r.id); }}

@@ -39,9 +39,13 @@ class ReviewController extends Controller
             'product_id' => 'required|exists:products,id',
             'customer_id' => 'required|exists:customers,id',
             'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string',
+            'comment' => 'nullable|string|max:2000',
             'is_approved' => 'boolean',
         ]);
+
+        if (!empty($validated['comment'])) {
+            $validated['comment'] = strip_tags($validated['comment']);
+        }
 
         $review = Review::create($validated);
 
@@ -63,9 +67,13 @@ class ReviewController extends Controller
     {
         $validated = $request->validate([
             'rating' => 'sometimes|integer|min:1|max:5',
-            'comment' => 'nullable|string',
+            'comment' => 'nullable|string|max:2000',
             'is_approved' => 'boolean',
         ]);
+
+        if (!empty($validated['comment'])) {
+            $validated['comment'] = strip_tags($validated['comment']);
+        }
 
         $review->update($validated);
 

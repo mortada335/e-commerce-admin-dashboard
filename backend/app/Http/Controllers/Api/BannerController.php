@@ -51,6 +51,13 @@ class BannerController extends Controller
         $productIds = $validated['product_ids'] ?? [];
         unset($validated['product_ids']);
 
+        // Sanitize text fields
+        foreach (['title', 'event_title', 'link'] as $field) {
+            if (!empty($validated[$field])) {
+                $validated[$field] = strip_tags($validated[$field]);
+            }
+        }
+
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('banners', config('filesystems.default'));
         }
@@ -96,6 +103,13 @@ class BannerController extends Controller
 
         $productIds = $validated['product_ids'] ?? null;
         unset($validated['product_ids']);
+
+        // Sanitize text fields
+        foreach (['title', 'event_title', 'link'] as $field) {
+            if (!empty($validated[$field])) {
+                $validated[$field] = strip_tags($validated[$field]);
+            }
+        }
 
         if ($request->hasFile('image')) {
             if ($banner->image) Storage::disk(config('filesystems.default'))->delete($banner->image);

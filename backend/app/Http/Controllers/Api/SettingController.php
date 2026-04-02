@@ -30,7 +30,7 @@ class SettingController extends Controller
     {
         $request->validate([
             'settings' => 'required|array',
-            'settings.*' => 'nullable',
+            'settings.*' => 'nullable|max:10000',
         ]);
 
         $oldValues = [];

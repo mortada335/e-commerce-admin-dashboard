@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { inventoryApi } from "@/lib/api";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import { Search, Package, AlertTriangle, CheckCircle2, Save, Download, History, X } from "lucide-react";
+import { Search, Package, AlertTriangle, CheckCircle2, Save, Download, History, X, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 function Skeleton({ className = "" }: { className?: string }) {
@@ -11,6 +12,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 export default function InventoryPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [onlyLowStock, setOnlyLowStock] = useState(false);
@@ -155,7 +157,7 @@ export default function InventoryPage() {
                     </td>
                   </tr>
                 ) : filteredInventory.map((item: any) => (
-                  <InventoryRow key={item.id} item={item} onUpdate={(data) => updateStockMutation.mutate({ productId: item.id, data })} />
+                  <InventoryRow key={item.id} item={item} onUpdate={(data) => updateStockMutation.mutate({ productId: item.id, data })} onNavigate={() => navigate(`/products/${item.id}`)} />
                 ))}
               </tbody>
             </table>
@@ -168,14 +170,16 @@ export default function InventoryPage() {
   );
 }
 
-function InventoryRow({ item, onUpdate }: { item: any; onUpdate: (data: any) => void }) {
+function InventoryRow({ item, onUpdate, onNavigate }: { item: any; onUpdate: (data: any) => void; onNavigate: () => void }) {
   const [stock, setStock] = useState(item.stock_quantity);
   const [threshold, setThreshold] = useState(item.low_stock_threshold);
   const hasChanges = stock !== item.stock_quantity || threshold !== item.low_stock_threshold;
 
   return (
     <tr className={cn("hover:bg-accent/20 transition-colors", item.is_low_stock && "bg-destructive/5")}>
-      <td className="px-4 py-3 font-medium text-foreground">{item.name}</td>
+      <td className="px-4 py-3 font-medium text-foreground">
+        <button onClick={onNavigate} className="text-foreground hover:text-primary transition-colors hover:underline">{item.name}</button>
+      </td>
       <td className="px-4 py-3 font-mono text-xs text-muted-foreground uppercase">{item.sku}</td>
       <td className="px-4 py-3 text-muted-foreground">{item.category?.name || "—"}</td>
       <td className="px-4 py-3">
@@ -197,16 +201,25 @@ function InventoryRow({ item, onUpdate }: { item: any; onUpdate: (data: any) => 
         />
       </td>
       <td className="px-4 py-3">
-        <button
-          disabled={!hasChanges}
-          onClick={() => onUpdate({ stock_quantity: stock, low_stock_threshold: threshold })}
-          className={cn(
-            "p-1.5 rounded-lg transition-all",
-            hasChanges ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20" : "text-muted-foreground bg-accent/5 opacity-50 grayscale cursor-not-allowed"
-          )}
-        >
-          <Save className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onNavigate}
+            className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-primary transition-colors"
+            title="View Product"
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </button>
+          <button
+            disabled={!hasChanges}
+            onClick={() => onUpdate({ stock_quantity: stock, low_stock_threshold: threshold })}
+            className={cn(
+              "p-1.5 rounded-lg transition-all",
+              hasChanges ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20" : "text-muted-foreground bg-accent/5 opacity-50 grayscale cursor-not-allowed"
+            )}
+          >
+            <Save className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </td>
     </tr>
   );

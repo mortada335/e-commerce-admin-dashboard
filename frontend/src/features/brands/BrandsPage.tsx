@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { brandsApi } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
-import { Search, Plus, Edit, Trash2, Tag, ChevronLeft, ChevronRight, X, Upload, Download } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Tag, ChevronLeft, ChevronRight, X, Upload, Download, Eye, CheckCircle2, XCircle, Package } from "lucide-react";
 import { toast } from "sonner";
 
 function Skeleton({ className = "" }: { className?: string }) {
@@ -11,6 +12,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 export default function BrandsPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [isActive, setIsActive] = useState("");
   const [page, setPage] = useState(1);
@@ -62,6 +64,38 @@ export default function BrandsPage() {
         </div>
       </div>
 
+      {/* KPI Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Tag className="w-4 h-4 text-primary" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total Brands</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{meta?.total ?? brands.length}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Active</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{brands.filter((b: any) => b.is_active).length}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <XCircle className="w-4 h-4 text-red-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Inactive</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{brands.filter((b: any) => !b.is_active).length}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Package className="w-4 h-4 text-orange-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total Products</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{brands.reduce((sum: number, b: any) => sum + (b.products_count ?? 0), 0)}</p>
+        </div>
+      </div>
+
       {showForm && (
         <BrandForm
           brand={editingBrand}
@@ -95,7 +129,7 @@ export default function BrandsPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/30">
               <tr>
-                {["Logo", "Name", "Slug", "Status", "Created", "Actions"].map((h) => (
+                {["Logo", "Name", "Slug", "Products", "Status", "Created", "Actions"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
@@ -104,14 +138,14 @@ export default function BrandsPage() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 7 }).map((_, j) => (
                       <td key={j} className="px-4 py-3"><Skeleton className="h-6" /></td>
                     ))}
                   </tr>
                 ))
               ) : brands.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center">
+                  <td colSpan={7} className="px-4 py-12 text-center">
                     <Tag className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                     <p className="text-muted-foreground">No brands found</p>
                   </td>
@@ -126,8 +160,11 @@ export default function BrandsPage() {
                         <div className="w-10 h-10 rounded bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium">B</div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-medium text-foreground">{b.name}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      <button onClick={() => navigate(`/brands/${b.id}`)} className="text-foreground hover:text-primary transition-colors hover:underline">{b.name}</button>
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{b.slug}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{b.products_count ?? 0}</td>
                     <td className="px-4 py-3">
                       <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", b.is_active ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground")}>
                         {b.is_active ? "Active" : "Inactive"}
@@ -136,6 +173,13 @@ export default function BrandsPage() {
                     <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(b.created_at)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => navigate(`/brands/${b.id}`)}
+                          className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-primary transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => { setEditingBrand(b); setShowForm(true); }}
                           className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"

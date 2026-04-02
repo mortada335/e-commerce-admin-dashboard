@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { categoriesApi } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
-import { Search, Plus, Edit, Trash2, FolderTree, Image as ImageIcon, X, Download } from "lucide-react";
+import { Search, Plus, Edit, Trash2, FolderTree, Image as ImageIcon, X, Download, Eye, Layers, CheckCircle2, Package } from "lucide-react";
 import { toast } from "sonner";
 
 function Skeleton({ className = "" }: { className?: string }) {
@@ -11,6 +12,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 export default function CategoriesPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
@@ -64,6 +66,38 @@ export default function CategoriesPage() {
           >
             <Plus className="w-4 h-4" /> Add Category
           </button>
+        </div>
+      </div>
+
+      {/* KPI Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <FolderTree className="w-4 h-4 text-primary" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{categories.length}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Active</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{categories.filter((c: any) => c.is_active).length}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Layers className="w-4 h-4 text-blue-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Root Level</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{categories.filter((c: any) => !c.parent_id).length}</p>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Package className="w-4 h-4 text-orange-400" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">Total Products</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{categories.reduce((sum: number, c: any) => sum + (c.products_count ?? 0), 0)}</p>
         </div>
       </div>
 
@@ -124,7 +158,9 @@ export default function CategoriesPage() {
                         <div className="w-10 h-10 rounded bg-muted flex items-center justify-center text-muted-foreground text-xs font-medium"><ImageIcon className="w-4 h-4 opacity-50" /></div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-medium text-foreground">{c.name}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      <button onClick={() => navigate(`/categories/${c.id}`)} className="text-foreground hover:text-primary transition-colors hover:underline">{c.name}</button>
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{c.slug}</td>
                     <td className="px-4 py-3 text-muted-foreground">{c.parent?.name || "—"}</td>
                     <td className="px-4 py-3 text-muted-foreground">{c.products_count ?? 0}</td>
@@ -135,6 +171,13 @@ export default function CategoriesPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => navigate(`/categories/${c.id}`)}
+                          className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-primary transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => { setEditingCategory(c); setShowForm(true); }}
                           className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
