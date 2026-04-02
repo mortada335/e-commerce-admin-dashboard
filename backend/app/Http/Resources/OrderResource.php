@@ -69,7 +69,9 @@ class OrderResource extends JsonResource
                 'method'         => $this->payment->method,
                 'status'         => $this->payment->status,
                 'amount'         => (float) $this->payment->amount,
-                'transaction_id' => $this->payment->transaction_id,
+                'transaction_id' => $this->payment->transaction_id
+                    ? '****' . substr($this->payment->transaction_id, -4)
+                    : null,
                 'paid_at'        => $this->payment->paid_at?->toISOString(),
             ] : null),
             'created_at' => $this->created_at?->toISOString(),

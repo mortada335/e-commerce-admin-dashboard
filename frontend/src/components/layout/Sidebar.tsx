@@ -22,25 +22,31 @@ import {
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: "Dashboard",    to: "/" },
-  { icon: ShoppingBag,     label: "Products",     to: "/products" },
-  { icon: FolderTree,      label: "Categories",   to: "/categories" },
-  { icon: ShoppingCart,    label: "Orders",       to: "/orders" },
-  { icon: Users,           label: "Customers",    to: "/customers" },
-  { icon: Bookmark,        label: "Brands",       to: "/brands" },
-  { icon: Star,            label: "Reviews",      to: "/reviews" },
-  { icon: ImageIcon,       label: "Banners",      to: "/banners" },
-  { icon: CreditCard,      label: "Payments",     to: "/payments" },
-  { icon: Package,         label: "Inventory",    to: "/inventory" },
-  { icon: Ticket,          label: "Coupons",      to: "/coupons" },
-  { icon: Activity,        label: "Activity Log", to: "/activity-log" },
-  { icon: Settings,        label: "Settings",     to: "/settings" },
+  { icon: LayoutDashboard, label: "Dashboard",    to: "/",             permission: "view dashboard" },
+  { icon: ShoppingBag,     label: "Products",     to: "/products",     permission: "view products" },
+  { icon: FolderTree,      label: "Categories",   to: "/categories",   permission: "view categories" },
+  { icon: ShoppingCart,    label: "Orders",       to: "/orders",       permission: "view orders" },
+  { icon: Users,           label: "Customers",    to: "/customers",    permission: "view customers" },
+  { icon: Bookmark,        label: "Brands",       to: "/brands",       permission: "view brands" },
+  { icon: Star,            label: "Reviews",      to: "/reviews",      permission: "manage products" },
+  { icon: ImageIcon,       label: "Banners",      to: "/banners",      permission: "manage products" },
+  { icon: CreditCard,      label: "Payments",     to: "/payments",     permission: "view orders" },
+  { icon: Package,         label: "Inventory",    to: "/inventory",    permission: "view inventory" },
+  { icon: Ticket,          label: "Coupons",      to: "/coupons",      permission: "view coupons" },
+  { icon: Activity,        label: "Activity Log", to: "/activity-log", permission: "view dashboard" },
+  { icon: Settings,        label: "Settings",     to: "/settings",     role: "admin" },
 ];
 
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar, setSidebarOpen } = useUIStore();
-  const { logout } = useAuthStore();
+  const { logout, hasPermission, hasRole } = useAuthStore();
   const navigate = useNavigate();
+
+  const filteredNavItems = NAV_ITEMS.filter(item => {
+    if (item.role && !hasRole(item.role)) return false;
+    if (item.permission && !hasPermission(item.permission)) return false;
+    return true;
+  });
 
   const handleLogout = async () => {
     try { await authApi.logout(); } catch {}
@@ -106,7 +112,7 @@ export function Sidebar() {
 
         {/* Nav items */}
         <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto" style={{ maxHeight: "calc(100vh - 8rem)" }}>
-          {NAV_ITEMS.map(({ icon: Icon, label, to }) => (
+          {filteredNavItems.map(({ icon: Icon, label, to }) => (
             <NavLink
               key={to}
               to={to}

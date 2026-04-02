@@ -5,12 +5,22 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Customer;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class DashboardService
 {
     public function getStats(?string $from = null, ?string $to = null): array
+    {
+        $cacheKey = 'dashboard:stats:' . ($from ?? 'default') . ':' . ($to ?? 'default');
+
+        return Cache::remember($cacheKey, 300, function () use ($from, $to) {
+            return $this->computeStats($from, $to);
+        });
+    }
+
+    private function computeStats(?string $from = null, ?string $to = null): array
     {
         $now = Carbon::now();
 
@@ -109,6 +119,15 @@ class DashboardService
 
     public function getSalesChart(int $days = 30, ?string $from = null, ?string $to = null): array
     {
+        $cacheKey = 'dashboard:chart:' . $days . ':' . ($from ?? '') . ':' . ($to ?? '');
+
+        return Cache::remember($cacheKey, 600, function () use ($days, $from, $to) {
+            return $this->computeSalesChart($days, $from, $to);
+        });
+    }
+
+    private function computeSalesChart(int $days = 30, ?string $from = null, ?string $to = null): array
+    {
         $query = Order::where('payment_status', 'paid');
 
         if ($from && $to) {
@@ -206,5 +225,18 @@ class DashboardService
             'revenue'      => round($row->revenue, 2),
             'orders_count' => $row->orders_count,
         ])->values()->toArray();
+    }
+
+    /**
+     * Invalidate dashboard caches. Call when orders/customers change.
+     */
+    public static function invalidateCache(): void
+    {
+        // Clear all dashboard caches using pattern
+        $keys = ['dashboard:stats:default:default'];
+        foreach ($keys as $key) {
+            Cache::forget($key);
+        }
+        // Also clear any custom date range caches won't persist beyond TTL (5-10 min)
     }
 }

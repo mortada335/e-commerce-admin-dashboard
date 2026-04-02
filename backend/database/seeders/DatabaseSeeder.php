@@ -24,9 +24,11 @@ class DatabaseSeeder extends Seeder
         $permissions = [
             'view dashboard', 'view products', 'manage products',
             'view orders', 'manage orders', 'view customers', 'manage customers',
-            'view categories', 'manage categories', 'view coupons', 'manage coupons',
+            'view categories', 'manage categories', 'view brands', 'manage brands',
+            'view coupons', 'manage coupons',
             'view inventory', 'manage inventory', 'view settings', 'manage settings',
             'view payments',
+            'manage banners', 'manage reviews',
         ];
 
         foreach ($permissions as $perm) {
@@ -38,8 +40,15 @@ class DatabaseSeeder extends Seeder
         $staff = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'web']);
 
         $admin->syncPermissions(Permission::all());
-        $manager->syncPermissions(['view dashboard', 'view products', 'manage products', 'view orders', 'manage orders', 'view customers', 'view categories', 'view inventory', 'view payments']);
-        $staff->syncPermissions(['view products', 'view orders', 'view customers', 'view inventory']);
+        $manager->syncPermissions([
+            'view dashboard', 'view products', 'manage products',
+            'view orders', 'manage orders', 'view customers',
+            'view categories', 'view brands', 'view inventory', 'view payments',
+        ]);
+        $staff->syncPermissions([
+            'view dashboard', 'view products', 'view orders',
+            'view customers', 'view categories', 'view brands', 'view inventory',
+        ]);
 
         // Admin User
         $adminUser = User::firstOrCreate(
@@ -53,6 +62,12 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Store Manager', 'password' => Hash::make('password'), 'is_active' => true]
         );
         $managerUser->assignRole('manager');
+
+        $staffUser = User::firstOrCreate(
+            ['email' => 'staff@example.com'],
+            ['name' => 'Staff Member', 'password' => Hash::make('password'), 'is_active' => true]
+        );
+        $staffUser->assignRole('staff');
 
         // Categories
         $electronics = Category::firstOrCreate(['slug' => 'electronics'], ['name' => 'Electronics', 'description' => 'Electronic gadgets and devices', 'is_active' => true]);

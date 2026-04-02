@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
+    use ApiResponse;
+
     public function index(Request $request): JsonResponse
     {
         $query = Category::withCount('products')->with('parent');
@@ -23,12 +26,12 @@ class CategoryController extends Controller
             $query->where('parent_id', $request->parent_id ?: null);
         }
 
-        $categories = $query->orderBy('sort_order')->paginate(50);
+        $categories = $query->orderBy('sort_order')->paginate(min((int) $request->get('per_page', 50), 100));
 
-        return response()->json([
-            'data' => CategoryResource::collection($categories->items()),
-            'meta' => ['total' => $categories->total(), 'current_page' => $categories->currentPage()],
-        ]);
+        return $this->successResponse(
+            CategoryResource::collection($categories->items()),
+            $this->paginationMeta($categories)
+        );
     }
 
     public function tree(): JsonResponse
@@ -38,11 +41,17 @@ class CategoryController extends Controller
             ->whereNull('parent_id')
             ->orderBy('sort_order')
             ->get();
-        return response()->json(CategoryResource::collection($categories));
+        return $this->successResponse(CategoryResource::collection($categories));
     }
 
     public function store(Request $request): JsonResponse
     {
+        if ($request->has('description')) {
+            $request->merge([
+                'description' => strip_tags($request->description, '<p><br><strong><em><ul><li><ol><h1><h2><h3><h4><h5><h6><blockquote><a>'),
+            ]);
+        }
+
         $data = $request->validate([
             'name'        => 'required|string|max:255',
             'slug'        => 'nullable|string|max:255|unique:categories,slug',
@@ -53,17 +62,23 @@ class CategoryController extends Controller
         ]);
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
         $category = Category::create($data);
-        return response()->json(new CategoryResource($category), 201);
+        return $this->successResponse(new CategoryResource($category), null, 201);
     }
 
     public function show(Category $category): JsonResponse
     {
         $category->load(['parent', 'children', 'products']);
-        return response()->json(new CategoryResource($category));
+        return $this->successResponse(new CategoryResource($category));
     }
 
     public function update(Request $request, Category $category): JsonResponse
     {
+        if ($request->has('description')) {
+            $request->merge([
+                'description' => strip_tags($request->description, '<p><br><strong><em><ul><li><ol><h1><h2><h3><h4><h5><h6><blockquote><a>'),
+            ]);
+        }
+
         $data = $request->validate([
             'name'        => 'sometimes|string|max:255',
             'slug'        => "nullable|string|max:255|unique:categories,slug,{$category->id}",
@@ -73,13 +88,21 @@ class CategoryController extends Controller
             'sort_order'  => 'integer',
         ]);
         $category->update($data);
-        return response()->json(new CategoryResource($category->fresh(['parent'])));
+        return $this->successResponse(new CategoryResource($category->fresh(['parent'])));
     }
 
     public function destroy(Category $category): JsonResponse
     {
+        if ($category->products()->exists()) {
+            return $this->errorResponse('VALIDATION_ERROR', 'Cannot delete a category that has products. Reassign or delete the products first.', null, 422);
+        }
+
+        if ($category->children()->exists()) {
+            return $this->errorResponse('VALIDATION_ERROR', 'Cannot delete a category that has subcategories. Delete the subcategories first.', null, 422);
+        }
+
         $category->delete();
-        return response()->json(['message' => 'Category deleted.']);
+        return $this->successResponse(null, null, 200, 'Category deleted.');
     }
 
     public function export(): \Symfony\Component\HttpFoundation\StreamedResponse

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { customersApi } from "@/lib/api";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
 import { Search, Users, ChevronLeft, ChevronRight, Eye, Download, Users as UsersIcon, UserCheck, UserPlus, Crown } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -13,6 +14,8 @@ export default function CustomersPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const { hasPermission } = useAuthStore();
+  const canManage = hasPermission("manage customers");
 
   const { data, isLoading } = useQuery({
     queryKey: ["customers", { search, page }],
@@ -49,9 +52,11 @@ export default function CustomersPage() {
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
-          <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-            + Add Customer
-          </button>
+          {canManage && (
+            <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+              + Add Customer
+            </button>
+          )}
         </div>
       </div>
 

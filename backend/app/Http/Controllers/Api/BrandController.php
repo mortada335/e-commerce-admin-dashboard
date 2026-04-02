@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Storage;
 
 class BrandController extends Controller
 {
+    use ApiResponse;
+
     /**
      * Display a listing of the resource.
      */
@@ -27,7 +30,8 @@ class BrandController extends Controller
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        return $query->orderBy('name')->paginate($request->get('per_page', 15));
+        $brands = $query->orderBy('name')->paginate(min((int) $request->get('per_page', 15), 100));
+        return $this->successResponse($brands->items(), $this->paginationMeta($brands));
     }
 
     /**
@@ -47,12 +51,12 @@ class BrandController extends Controller
         }
 
         if ($request->hasFile('logo')) {
-            $validated['logo'] = $request->file('logo')->store('brands', 'public');
+            $validated['logo'] = $request->file('logo')->store('brands', config('filesystems.default'));
         }
 
         $brand = Brand::create($validated);
 
-        return response()->json($brand, 201);
+        return $this->successResponse($brand, null, 201);
     }
 
     /**
@@ -81,8 +85,8 @@ class BrandController extends Controller
         }
 
         if ($request->hasFile('logo')) {
-            if ($brand->logo) Storage::disk('public')->delete($brand->logo);
-            $validated['logo'] = $request->file('logo')->store('brands', 'public');
+            if ($brand->logo) Storage::disk(config('filesystems.default'))->delete($brand->logo);
+            $validated['logo'] = $request->file('logo')->store('brands', config('filesystems.default'));
         }
 
         $brand->update($validated);
@@ -95,7 +99,11 @@ class BrandController extends Controller
      */
     public function destroy(Brand $brand)
     {
-        if ($brand->logo) Storage::disk('public')->delete($brand->logo);
+        if ($brand->products()->exists()) {
+            return $this->errorResponse('VALIDATION_ERROR', 'Cannot delete a brand that has products. Reassign or delete the products first.', null, 422);
+        }
+
+        if ($brand->logo) Storage::disk(config('filesystems.default'))->delete($brand->logo);
         $brand->delete();
 
         return response()->noContent();

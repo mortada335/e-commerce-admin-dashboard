@@ -30,7 +30,7 @@ class CustomerService
         $dir  = $filters['sort_dir'] ?? 'desc';
         $query->orderBy($sort, $dir);
 
-        return $query->paginate($filters['per_page'] ?? 15);
+        return $query->paginate(min((int) ($filters['per_page'] ?? 15), 100));
     }
 
     public function create(array $data): Customer

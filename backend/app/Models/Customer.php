@@ -21,6 +21,12 @@ class Customer extends Model
         'is_active'         => 'boolean',
         'email_verified_at' => 'datetime',
         'date_of_birth'     => 'date',
+        'address_line1'     => 'encrypted',
+        'address_line2'     => 'encrypted',
+        'city'              => 'encrypted',
+        'state'             => 'encrypted',
+        'country'           => 'encrypted',
+        'zip'               => 'encrypted',
     ];
 
     public function orders(): HasMany

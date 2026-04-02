@@ -6,6 +6,7 @@ import { Search, Plus, Edit, Trash2, Package, ChevronLeft, ChevronRight, Downloa
 import { useNavigate } from "react-router-dom";
 import ProductForm from "./ProductForm";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/authStore";
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className}`} />;
@@ -22,6 +23,8 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [bulkStatus, setBulkStatus] = useState("");
+  const { hasPermission } = useAuthStore();
+  const canManage = hasPermission("manage products");
 
   const { data: stats } = useQuery({
     queryKey: ["products-stats"],
@@ -110,12 +113,14 @@ export default function ProductsPage() {
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
-          <button 
-            onClick={() => { setEditingProduct(null); setShowForm(true); }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Add Product
-          </button>
+          {canManage && (
+            <button 
+              onClick={() => { setEditingProduct(null); setShowForm(true); }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Add Product
+            </button>
+          )}
         </div>
       </div>
 
@@ -160,7 +165,7 @@ export default function ProductsPage() {
       )}
 
       {/* Bulk Action Bar */}
-      {selectedIds.length > 0 && (
+      {selectedIds.length > 0 && canManage && (
         <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/20">
           <span className="text-sm font-medium text-foreground">{selectedIds.length} selected</span>
           
@@ -303,18 +308,22 @@ export default function ProductsPage() {
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
-                        <button 
-                          onClick={() => { setEditingProduct(p); setShowForm(true); }}
-                          className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => { if (confirm("Delete this product?")) deleteMutation.mutate(p.id as number); }}
-                          className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {canManage && (
+                          <>
+                            <button 
+                              onClick={() => { setEditingProduct(p); setShowForm(true); }}
+                              className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => { if (confirm("Delete this product?")) deleteMutation.mutate(p.id as number); }}
+                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -40,7 +40,7 @@ class ProductService
         $dir  = $filters['sort_dir'] ?? 'desc';
         $query->orderBy($sort, $dir);
 
-        return $query->paginate($filters['per_page'] ?? 15);
+        return $query->paginate(min((int) ($filters['per_page'] ?? 15), 100));
     }
 
     public function create(array $data, array $imageFiles = []): Product
@@ -99,7 +99,7 @@ class ProductService
 
         // No orders reference this product — clean up images from disk
         foreach ($product->images as $image) {
-            Storage::disk('public')->delete($image->path);
+            Storage::disk(config('filesystems.default'))->delete($image->path);
         }
 
         ActivityLog::record('product_deleted', $product);
@@ -109,13 +109,13 @@ class ProductService
     public function deleteImage(Product $product, int $imageId): void
     {
         $image = $product->images()->findOrFail($imageId);
-        Storage::disk('public')->delete($image->path);
+        Storage::disk(config('filesystems.default'))->delete($image->path);
         $image->delete();
     }
 
     private function storeImage(Product $product, UploadedFile $file, int $order = 0): ProductImage
     {
-        $path = $file->store("products/{$product->id}", 'public');
+        $path = $file->store("products/{$product->id}", config('filesystems.default'));
 
         return ProductImage::create([
             'product_id' => $product->id,

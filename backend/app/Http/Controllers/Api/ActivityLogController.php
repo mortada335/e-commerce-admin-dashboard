@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ActivityLogController extends Controller
 {
+    use ApiResponse;
+
     public function index(Request $request): JsonResponse
     {
         $query = ActivityLog::with('user')->latest();
@@ -34,16 +37,11 @@ class ActivityLogController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $logs = $query->paginate($request->get('per_page', 20));
+        $logs = $query->paginate(min((int) $request->get('per_page', 20), 100));
 
-        return response()->json([
-            'data' => $logs->items(),
-            'meta' => [
-                'current_page' => $logs->currentPage(),
-                'last_page'    => $logs->lastPage(),
-                'per_page'     => $logs->perPage(),
-                'total'        => $logs->total(),
-            ],
-        ]);
+        return $this->successResponse(
+            $logs->items(),
+            $this->paginationMeta($logs)
+        );
     }
 }
