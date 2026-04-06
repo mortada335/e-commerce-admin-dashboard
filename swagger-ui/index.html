@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E-Commerce Admin Dashboard — Swagger UI</title>
+  <meta name="description" content="Interactive API documentation for the E-Commerce Admin Dashboard API with token-based authentication." />
+
+  <!-- Swagger UI CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-primary: #0f111a;
+      --bg-secondary: #1a1d2e;
+      --bg-tertiary: #242842;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.3);
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border: #2d3154;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --info: #60a5fa;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* ─── Custom Header ─── */
+    .api-header {
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 50%, var(--bg-secondary) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      backdrop-filter: blur(20px);
+    }
+
+    .header-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: white;
+      box-shadow: 0 4px 20px var(--accent-glow);
+      letter-spacing: -1px;
+    }
+
+    .header-title-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--text-primary), var(--accent-hover));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.3px;
+    }
+
+    .header-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-version {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-hover);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .badge-openapi {
+      background: rgba(52, 211, 153, 0.12);
+      color: var(--success);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    /* ─── Auth Panel ─── */
+    .auth-panel {
+      background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
+    }
+
+    .auth-panel.collapsed {
+      max-height: 0;
+      padding: 0;
+    }
+
+    .auth-panel.expanded {
+      max-height: 300px;
+    }
+
+    .auth-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 32px;
+    }
+
+    .auth-content {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .auth-field {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .auth-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .auth-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      margin-left: 4px;
+    }
+
+    .auth-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .auth-prefix {
+      position: absolute;
+      left: 14px;
+      font-size: 13px;
+      color: var(--accent-hover);
+      font-weight: 600;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 12px 16px 12px 68px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: 'Inter', monospace;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .auth-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .auth-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .auth-btn {
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn-authorize {
+      background: linear-gradient(135deg, var(--accent), #7c3aed);
+      color: white;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    .btn-authorize:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 25px var(--accent-glow);
+    }
+
+    .btn-authorize.active {
+      background: linear-gradient(135deg, var(--success), #059669);
+      box-shadow: 0 4px 15px rgba(52, 211, 153, 0.3);
+    }
+
+    .btn-clear {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-clear:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .auth-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      padding: 8px 0;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.connected {
+      background: var(--success);
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+    }
+
+    .status-dot.disconnected {
+      background: var(--text-muted);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .toggle-auth-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .toggle-auth-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-hover);
+    }
+
+    .toggle-auth-btn .lock-icon {
+      font-size: 14px;
+    }
+
+    .toggle-auth-btn.authorized {
+      border-color: var(--success);
+      color: var(--success);
+      background: rgba(52, 211, 153, 0.08);
+    }
+
+    /* ─── Base URL Display ─── */
+    .base-url-bar {
+      max-width: 1440px;
+      margin: 16px auto;
+      padding: 0 32px;
+    }
+
+    .base-url-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .base-url-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .base-url-input {
+      flex: 1;
+      padding: 8px 14px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--accent-hover);
+      font-size: 14px;
+      font-family: 'Inter', monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .base-url-input:focus {
+      border-color: var(--accent);
+    }
+
+    .base-url-apply {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--accent);
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--accent-hover);
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+    }
+
+    .base-url-apply:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* ─── Swagger UI Dark Theme Override ─── */
+    .swagger-ui {
+      font-family: 'Inter', sans-serif !important;
+    }
+
+    /* Main wrapper */
+    .swagger-ui .wrapper {
+      max-width: 1440px;
+      padding: 0 32px;
+    }
+
+    /* Hide default topbar & info section auth */
+    .swagger-ui .topbar { display: none !important; }
+    .swagger-ui .info { padding: 20px 0 !important; }
+    .swagger-ui .info .title { color: var(--text-primary) !important; font-size: 28px !important; font-weight: 700 !important; }
+    .swagger-ui .info .description { color: var(--text-secondary) !important; }
+    .swagger-ui .info a { color: var(--accent-hover) !important; }
+
+    /* Scheme container */
+    .swagger-ui .scheme-container { background: var(--bg-secondary) !important; border: 1px solid var(--border) !important; border-radius: 10px !important; box-shadow: none !important; padding: 16px !important; margin: 16px 0 !important; }
+    .swagger-ui .scheme-container .schemes > label { color: var(--text-secondary) !important; }
+
+    /* Tags / sections */
+    .swagger-ui .opblock-tag-section { margin-bottom: 8px !important; }
+    .swagger-ui .opblock-tag { color: var(--text-primary) !important; border-bottom: 1px solid var(--border) !important; font-weight: 600 !important; font-size: 18px !important; }
+    .swagger-ui .opblock-tag:hover { background: var(--bg-secondary) !important; }
+    .swagger-ui .opblock-tag small { color: var(--text-muted) !important; }
+
+    /* Operation blocks */
+    .swagger-ui .opblock { background: var(--bg-secondary) !important; border: 1px solid var(--border) !important; border-radius: 10px !important; margin-bottom: 8px !important; box-shadow: none !important; }
+    .swagger-ui .opblock:hover { border-color: var(--text-muted) !important; }
+
+    /* HTTP method colors */
+    .swagger-ui .opblock.opblock-get { border-left: 4px solid var(--info) !important; }
+    .swagger-ui .opblock.opblock-get .opblock-summary { background: rgba(96, 165, 250, 0.06) !important; }
+    .swagger-ui .opblock.opblock-get .opblock-summary-method { background: var(--info) !important; }
+
+    .swagger-ui .opblock.opblock-post { border-left: 4px solid var(--success) !important; }
+    .swagger-ui .opblock.opblock-post .opblock-summary { background: rgba(52, 211, 153, 0.06) !important; }
+    .swagger-ui .opblock.opblock-post .opblock-summary-method { background: var(--success) !important; }
+
+    .swagger-ui .opblock.opblock-put { border-left: 4px solid var(--warning) !important; }
+    .swagger-ui .opblock.opblock-put .opblock-summary { background: rgba(251, 191, 36, 0.06) !important; }
+    .swagger-ui .opblock.opblock-put .opblock-summary-method { background: var(--warning) !important; color: #000 !important; }
+
+    .swagger-ui .opblock.opblock-patch { border-left: 4px solid #c084fc !important; }
+    .swagger-ui .opblock.opblock-patch .opblock-summary { background: rgba(192, 132, 252, 0.06) !important; }
+    .swagger-ui .opblock.opblock-patch .opblock-summary-method { background: #c084fc !important; color: #000 !important; }
+
+    .swagger-ui .opblock.opblock-delete { border-left: 4px solid var(--danger) !important; }
+    .swagger-ui .opblock.opblock-delete .opblock-summary { background: rgba(248, 113, 113, 0.06) !important; }
+    .swagger-ui .opblock.opblock-delete .opblock-summary-method { background: var(--danger) !important; }
+
+    /* Method badges */
+    .swagger-ui .opblock .opblock-summary-method { border-radius: 6px !important; font-weight: 700 !important; font-size: 12px !important; padding: 6px 12px !important; min-width: 70px !important; text-align: center !important; color: #fff !important; }
+
+    /* Summary path */
+    .swagger-ui .opblock .opblock-summary-path { color: var(--text-primary) !important; font-weight: 500 !important; }
+    .swagger-ui .opblock .opblock-summary-path__deprecated { color: var(--text-muted) !important; }
+    .swagger-ui .opblock .opblock-summary-description { color: var(--text-secondary) !important; }
+
+    /* Operation body */
+    .swagger-ui .opblock-body { background: var(--bg-primary) !important; }
+    .swagger-ui .opblock-body pre { background: var(--bg-tertiary) !important; color: var(--text-primary) !important; border-radius: 8px !important; border: 1px solid var(--border) !important; }
+
+    /* Parameters */
+    .swagger-ui .parameters-col_description { color: var(--text-secondary) !important; }
+    .swagger-ui .parameter__name { color: var(--text-primary) !important; }
+    .swagger-ui .parameter__name.required::after { color: var(--danger) !important; }
+    .swagger-ui .parameter__type { color: var(--accent-hover) !important; }
+    .swagger-ui table thead tr th { color: var(--text-secondary) !important; border-bottom: 1px solid var(--border) !important; }
+    .swagger-ui table tbody tr td { color: var(--text-primary) !important; border-bottom: 1px solid rgba(45, 49, 84, 0.5) !important; }
+
+    /* Inputs */
+    .swagger-ui input[type=text], .swagger-ui input[type=password], .swagger-ui input[type=search], .swagger-ui input[type=email], .swagger-ui input[type=file],
+    .swagger-ui textarea, .swagger-ui select {
+      background: var(--bg-primary) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--text-primary) !important;
+      border-radius: 6px !important;
+      font-family: 'Inter', monospace !important;
+    }
+    .swagger-ui input:focus, .swagger-ui textarea:focus, .swagger-ui select:focus {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 2px var(--accent-glow) !important;
+      outline: none !important;
+    }
+
+    /* Buttons */
+    .swagger-ui .btn { border-radius: 8px !important; font-weight: 600 !important; font-family: 'Inter', sans-serif !important; transition: all 0.2s ease !important; }
+    .swagger-ui .btn.execute { background: linear-gradient(135deg, var(--accent), #7c3aed) !important; color: white !important; border: none !important; box-shadow: 0 2px 10px var(--accent-glow) !important; }
+    .swagger-ui .btn.execute:hover { box-shadow: 0 4px 20px var(--accent-glow) !important; transform: translateY(-1px) !important; }
+    .swagger-ui .btn.cancel { background: transparent !important; color: var(--danger) !important; border: 1px solid var(--danger) !important; }
+    .swagger-ui .btn.authorize { background: linear-gradient(135deg, var(--accent), #7c3aed) !important; color: white !important; border-color: transparent !important; }
+
+    /* Responses */
+    .swagger-ui .responses-inner { background: var(--bg-primary) !important; }
+    .swagger-ui .response-col_status { color: var(--text-primary) !important; font-weight: 600 !important; }
+    .swagger-ui .response-col_description { color: var(--text-secondary) !important; }
+    .swagger-ui .response-col_links { color: var(--text-muted) !important; }
+
+    /* Models */
+    .swagger-ui section.models { border: 1px solid var(--border) !important; border-radius: 10px !important; background: var(--bg-secondary) !important; }
+    .swagger-ui section.models h4 { color: var(--text-primary) !important; border-bottom: 1px solid var(--border) !important; }
+    .swagger-ui .model-container { background: var(--bg-primary) !important; border-radius: 8px !important; margin: 8px 0 !important; }
+    .swagger-ui .model { color: var(--text-primary) !important; }
+    .swagger-ui .model .property { color: var(--text-secondary) !important; }
+    .swagger-ui .model-title { color: var(--text-primary) !important; }
+
+    /* Auth dialog */
+    .swagger-ui .dialog-ux .modal-ux { background: var(--bg-secondary) !important; border: 1px solid var(--border) !important; border-radius: 14px !important; box-shadow: 0 20px 60px rgba(0,0,0,0.5) !important; }
+    .swagger-ui .dialog-ux .modal-ux-header { border-bottom: 1px solid var(--border) !important; }
+    .swagger-ui .dialog-ux .modal-ux-header h3 { color: var(--text-primary) !important; }
+    .swagger-ui .dialog-ux .modal-ux-content { color: var(--text-secondary) !important; }
+    .swagger-ui .dialog-ux .modal-ux-content p { color: var(--text-secondary) !important; }
+    .swagger-ui .dialog-ux .modal-ux-content label { color: var(--text-secondary) !important; }
+
+    /* Loading */
+    .swagger-ui .loading-container { padding: 60px !important; }
+    .swagger-ui .loading-container .loading::after { color: var(--text-secondary) !important; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* Try-it-out response */
+    .swagger-ui .highlight-code { background: var(--bg-tertiary) !important; border-radius: 8px !important; }
+    .swagger-ui .highlight-code .microlight { color: var(--text-primary) !important; background: transparent !important; }
+    .swagger-ui .curl-command .copy-to-clipboard { background: var(--bg-tertiary) !important; }
+
+    /* Misc text */
+    .swagger-ui .markdown p, .swagger-ui .markdown li { color: var(--text-secondary) !important; }
+    .swagger-ui .renderedMarkdown p { color: var(--text-secondary) !important; }
+    .swagger-ui h4, .swagger-ui h5 { color: var(--text-primary) !important; }
+    .swagger-ui label { color: var(--text-secondary) !important; }
+    .swagger-ui .opblock-description-wrapper p { color: var(--text-secondary) !important; }
+    .swagger-ui .opblock-external-docs-wrapper p { color: var(--text-secondary) !important; }
+
+    /* Tab header */
+    .swagger-ui .tab li { color: var(--text-muted) !important; }
+    .swagger-ui .tab li.active { color: var(--text-primary) !important; }
+    .swagger-ui .opblock-body .opblock-section-header { background: var(--bg-secondary) !important; box-shadow: none !important; border-bottom: 1px solid var(--border) !important; }
+    .swagger-ui .opblock-body .opblock-section-header h4 { color: var(--text-primary) !important; }
+    .swagger-ui .opblock-body .opblock-section-header label { color: var(--text-secondary) !important; }
+
+    /* Lock icon */
+    .swagger-ui .authorization__btn { fill: var(--text-muted) !important; }
+    .swagger-ui .authorization__btn.locked { fill: var(--success) !important; }
+    .swagger-ui .authorization__btn.unlocked { fill: var(--text-muted) !important; }
+
+    /* Copy button */
+    .swagger-ui .copy-to-clipboard { background: var(--bg-tertiary) !important; }
+    .swagger-ui .copy-to-clipboard button { background: var(--bg-tertiary) !important; }
+
+    /* Footer */
+    .api-footer {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 32px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+    }
+
+    .api-footer a {
+      color: var(--accent-hover);
+      text-decoration: none;
+    }
+
+    .api-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      background: rgba(6, 95, 70, 0.95);
+      color: var(--success);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .toast.error {
+      background: rgba(127, 29, 29, 0.95);
+      color: var(--danger);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .toast.info {
+      background: rgba(30, 58, 138, 0.95);
+      color: var(--info);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header-inner { padding: 12px 16px; }
+      .header-badge { display: none; }
+      .swagger-ui .wrapper { padding: 0 16px; }
+      .base-url-bar { padding: 0 16px; }
+      .auth-inner { padding: 16px; }
+      .auth-content { flex-direction: column; }
+      .auth-field { min-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="api-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="header-logo">E</div>
+        <div class="header-title-group">
+          <h1 class="header-title">E-Commerce Admin API</h1>
+          <span class="header-subtitle">Interactive API Documentation & Testing</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="header-badge badge-openapi">OpenAPI 3.0</span>
+        <span class="header-badge badge-version">v1.0.0</span>
+        <button class="toggle-auth-btn" id="toggleAuthBtn" onclick="toggleAuthPanel()">
+          <span class="lock-icon">🔒</span>
+          <span id="authBtnLabel">Authenticate</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Auth Panel -->
+  <div class="auth-panel collapsed" id="authPanel">
+    <div class="auth-inner">
+      <div class="auth-content">
+        <div class="auth-field">
+          <label class="auth-label">
+            Authorization Token
+            <span class="auth-hint">— Format: Token &lt;your-token&gt;</span>
+          </label>
+          <div class="auth-input-wrapper">
+            <span class="auth-prefix">Token</span>
+            <input
+              type="password"
+              class="auth-input"
+              id="authToken"
+              placeholder="Paste your token here..."
+              autocomplete="off"
+            />
+          </div>
+        </div>
+        <button class="auth-btn btn-authorize" id="authorizeBtn" onclick="authorizeToken()">
+          ✦ Authorize
+        </button>
+        <button class="auth-btn btn-clear" id="clearBtn" onclick="clearToken()" style="display:none;">
+          ✕ Clear
+        </button>
+      </div>
+      <div class="auth-status" id="authStatus">
+        <span class="status-dot disconnected" id="statusDot"></span>
+        <span id="statusText" style="color: var(--text-muted);">Not authenticated</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Base URL -->
+  <div class="base-url-bar">
+    <div class="base-url-content">
+      <span class="base-url-label">Base URL</span>
+      <input type="text" class="base-url-input" id="baseUrlInput" value="http://localhost:8000/api" placeholder="http://your-api-server.com/api" />
+      <button class="base-url-apply" onclick="updateBaseUrl()">Apply</button>
+    </div>
+  </div>
+
+  <!-- Swagger UI Container -->
+  <div id="swagger-ui"></div>
+
+  <!-- Footer -->
+  <footer class="api-footer">
+    <p>E-Commerce Admin Dashboard API &middot; Powered by <a href="https://swagger.io/tools/swagger-ui/" target="_blank" rel="noopener">Swagger UI</a> &middot; OpenAPI 3.0.3</p>
+  </footer>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Swagger UI JS -->
+  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js"></script>
+
+  <script>
+    let swaggerUI = null;
+    let isAuthorized = false;
+
+    // ─── Initialize Swagger UI ───
+    function initSwagger(baseUrl) {
+      const specUrl = './swagger-admin.yaml';
+
+      swaggerUI = SwaggerUIBundle({
+        url: specUrl,
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        plugins: [
+          SwaggerUIBundle.plugins.DownloadUrl
+        ],
+        layout: "StandaloneLayout",
+        defaultModelsExpandDepth: 1,
+        defaultModelExpandDepth: 2,
+        docExpansion: "list",
+        filter: true,
+        showExtensions: true,
+        showCommonExtensions: true,
+        tryItOutEnabled: true,
+        requestInterceptor: (req) => {
+          // Inject stored token into every request
+          const token = localStorage.getItem('ecommerce_admin_token');
+          if (token) {
+            req.headers['Authorization'] = 'Token ' + token;
+          }
+          // Override base URL (skip for the swagger spec file itself)
+          const storedBaseUrl = localStorage.getItem('ecommerce_base_url');
+          if (storedBaseUrl && req.url && !req.url.endsWith('.yaml') && !req.url.endsWith('.json')) {
+            try {
+              // Parse the generated URL and the desired base URL
+              const reqUrl = new URL(req.url, window.location.origin);
+              const customBase = new URL(storedBaseUrl);
+              
+              // Only override the origin, trusting Swagger for the path logic
+              req.url = customBase.origin + reqUrl.pathname + reqUrl.search;
+            } catch (e) {
+              console.error('Failed to override URL', e);
+            }
+          }
+          return req;
+        },
+        responseInterceptor: (res) => {
+          if (res.status === 401) {
+            showToast('Authentication failed — check your token', 'error');
+          }
+          return res;
+        }
+      });
+    }
+
+    // ─── Auth Functions ───
+    function toggleAuthPanel() {
+      const panel = document.getElementById('authPanel');
+      panel.classList.toggle('collapsed');
+      panel.classList.toggle('expanded');
+    }
+
+    function authorizeToken() {
+      const tokenInput = document.getElementById('authToken');
+      const token = tokenInput.value.trim();
+
+      if (!token) {
+        showToast('Please enter a token', 'error');
+        return;
+      }
+
+      localStorage.setItem('ecommerce_admin_token', token);
+      isAuthorized = true;
+
+      // Update UI
+      updateAuthUI(true);
+
+      // Also authorize via Swagger UI's built-in auth
+      if (swaggerUI) {
+        swaggerUI.preauthorizeApiKey('tokenAuth', 'Token ' + token);
+      }
+
+      showToast('Token authorized successfully!', 'success');
+    }
+
+    function clearToken() {
+      localStorage.removeItem('ecommerce_admin_token');
+      isAuthorized = false;
+
+      document.getElementById('authToken').value = '';
+      updateAuthUI(false);
+      showToast('Token cleared', 'info');
+    }
+
+    function updateAuthUI(authorized) {
+      const btn = document.getElementById('toggleAuthBtn');
+      const authorizeBtn = document.getElementById('authorizeBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      const authBtnLabel = document.getElementById('authBtnLabel');
+
+      if (authorized) {
+        btn.classList.add('authorized');
+        authBtnLabel.textContent = 'Authorized ✓';
+        authorizeBtn.classList.add('active');
+        authorizeBtn.textContent = '✓ Authorized';
+        clearBtn.style.display = 'inline-block';
+        statusDot.className = 'status-dot connected';
+        statusText.textContent = 'Authenticated — Token is active';
+        statusText.style.color = 'var(--success)';
+      } else {
+        btn.classList.remove('authorized');
+        authBtnLabel.textContent = 'Authenticate';
+        authorizeBtn.classList.remove('active');
+        authorizeBtn.textContent = '✦ Authorize';
+        clearBtn.style.display = 'none';
+        statusDot.className = 'status-dot disconnected';
+        statusText.textContent = 'Not authenticated';
+        statusText.style.color = 'var(--text-muted)';
+      }
+    }
+
+    // ─── Base URL ───
+    function updateBaseUrl() {
+      const input = document.getElementById('baseUrlInput');
+      const url = input.value.trim().replace(/\/$/, '');
+      if (!url) {
+        showToast('Please enter a base URL', 'error');
+        return;
+      }
+      localStorage.setItem('ecommerce_base_url', url);
+      showToast('Base URL updated to: ' + url, 'success');
+    }
+
+    // ─── Toast Notification ───
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      const icons = { success: '✓', error: '✕', info: 'ℹ' };
+      toast.className = 'toast ' + type;
+      toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> ${message}`;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // ─── Initialize ───
+    document.addEventListener('DOMContentLoaded', () => {
+      // Restore stored token
+      const storedToken = localStorage.getItem('ecommerce_admin_token');
+      if (storedToken) {
+        document.getElementById('authToken').value = storedToken;
+        isAuthorized = true;
+        updateAuthUI(true);
+      }
+
+      // Restore stored base url
+      const storedBaseUrl = localStorage.getItem('ecommerce_base_url');
+      if (storedBaseUrl) {
+        document.getElementById('baseUrlInput').value = storedBaseUrl;
+      }
+
+      initSwagger();
+    });
+  </script>
+</body>
+</html>

@@ -16,7 +16,11 @@ return [
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => explode(',', env('FRONTEND_URL', 'http://localhost:5173')),
+    'allowed_origins' => [
+        ...explode(',', env('FRONTEND_URL', 'http://localhost:5173')),
+        'http://localhost:9090',
+        'http://127.0.0.1:9090'
+    ],
 
     'allowed_origins_patterns' => [],
 
