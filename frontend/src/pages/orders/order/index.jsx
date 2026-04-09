@@ -143,7 +143,7 @@ const Order = () => {
     setIsPublishShipmentDialogOpenDialogOpen(true);
     setOrderDetails(order?.data);
   };
-  console.log(orderDetails?.data?.results)
+  console.log(order?.data?.data)
 
     const shippingGovernorate = useMemo(() => {
    return resolveCity(order?.data?.shipping_postcode)

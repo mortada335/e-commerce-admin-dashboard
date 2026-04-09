@@ -58,9 +58,10 @@ const ActionsCell = ({ item }) => {
           <Tooltip>
             <TooltipTrigger>
               {" "}
+              {console.log(item)}
               <Link
                 className="  "
-                to={`/sales/orders/details/${item.orderId}`}
+                to={`/sales/orders/details/${item.orderData?.id}`}
                 onClick={() => {
                   setSelectedOrder(item?.orderData);
                 }}

@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import Text from "@/components/layout/text";
 import {
   convertStatusIdToString,
+  displayBasicDate,
   formatNumberWithCurrency,
 } from "@/utils/methods";
 import {
@@ -48,7 +49,7 @@ export default [
       </TooltipProvider>
     ),
     accessorKey: "orderId",
-    cell: ({ row }) => <Text text={row?.original?.orderId} />,
+    cell: ({ row }) => <Text text={row?.original?.orderData?.orderId} />
   },
 
   // {
@@ -105,14 +106,14 @@ export default [
     ),
 
     accessorKey: "customerName",
-    cell: ({ row }) => <Text text={row?.original?.customerName} />,
+    cell: ({ row }) => <Text text={row?.original?.orderData?.customerName} />,
   },
 
   {
     header: () => <div className="text-left uppercase">{i18n.t("customer No")}</div>,
 
     accessorKey: "customerNumber",
-    cell: ({ row }) => <Text text={row?.original?.customerNumber} />,
+    cell: ({ row }) => <Text className={"truncate"} text={row?.original?.orderData?.customerNumber} />,
   },
   // {
   //   header: () => <div className="text-left uppercase">{i18n.t("status")}</div>,
@@ -170,12 +171,13 @@ export default [
     accessorKey: "order_status_id",
     cell: ({ row }) => (
       <div className="flex justify-center">
+        {console.log(row?.original)}
  
           <Badge 
             variant="outline" 
-            className="w-fit text-sm truncate"
+            className="w-fit text-sm capitalize truncate"
           >
-            {i18n.t(convertStatusIdToString(row?.original?.orderData?.order_status_id))}
+            {i18n.t((row?.original?.orderData?.status))}
           </Badge>
       </div>
     ),
@@ -245,7 +247,7 @@ export default [
       />
     ),
     accessorKey: "dateAdded",
-    cell: ({ row }) => <Text text={row?.original?.dateAdded} />,
+    cell: ({ row }) => <Text text={displayBasicDate(row?.original?.orderData?.dateAdded)} />,
   },
 
   {
@@ -257,7 +259,7 @@ export default [
       />
     ),
     accessorKey: "dateModified",
-    cell: ({ row }) => <Text text={row?.original?.dateModified} />,
+    cell: ({ row }) => <Text text={displayBasicDate(row?.original?.orderData?.dateModified)} />,
   },
   {
   header: ({ column }) => (
