@@ -8,6 +8,15 @@ class StoreProductRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('description')) {
+            $this->merge([
+                'description' => strip_tags($this->description, '<p><br><strong><em><ul><li><ol><h1><h2><h3><h4><h5><h6><blockquote><a>'),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [

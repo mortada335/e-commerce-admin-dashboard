@@ -24,6 +24,16 @@ class CouponResource extends JsonResource
             'starts_at'          => $this->starts_at?->toISOString(),
             'expires_at'         => $this->expires_at?->toISOString(),
             'created_at'         => $this->created_at?->toISOString(),
+
+            // Front-End aliases
+            'name'               => $this->description ?? $this->code,
+            'status'             => $this->is_active,
+            'discount'           => (float) $this->value,
+            'total_min'          => $this->min_order_amount ? (float) $this->min_order_amount : 0,
+            'total_max'          => $this->max_discount_amount ? (float) $this->max_discount_amount : 0,
+            'date_added'         => $this->created_at?->toISOString(),
+            'date_start'         => $this->starts_at?->toISOString(),
+            'date_end'           => $this->expires_at?->toISOString(),
         ];
     }
 }

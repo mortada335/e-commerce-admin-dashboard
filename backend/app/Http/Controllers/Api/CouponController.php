@@ -7,11 +7,14 @@ use App\Http\Requests\StoreCouponRequest;
 use App\Http\Resources\CouponResource;
 use App\Models\Coupon;
 use App\Models\Order;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CouponController extends Controller
 {
+    use ApiResponse;
+
     public function index(Request $request): JsonResponse
     {
         $query = Coupon::query();
@@ -24,12 +27,12 @@ class CouponController extends Controller
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        $coupons = $query->latest()->paginate(15);
+        $coupons = $query->latest()->paginate(min((int) $request->get('per_page', 15), 100));
 
-        return response()->json([
-            'data' => CouponResource::collection($coupons->items()),
-            'meta' => ['total' => $coupons->total(), 'current_page' => $coupons->currentPage()],
-        ]);
+        return $this->successResponse(
+            CouponResource::collection($coupons->items()),
+            $this->paginationMeta($coupons)
+        );
     }
 
     public function store(StoreCouponRequest $request): JsonResponse
@@ -39,7 +42,7 @@ class CouponController extends Controller
             $data['code'] = strtoupper($data['code']);
         }
         $coupon = Coupon::create($data);
-        return response()->json(new CouponResource($coupon), 201);
+        return $this->successResponse(new CouponResource($coupon), null, 201);
     }
 
     public function show(Coupon $coupon): JsonResponse
@@ -52,7 +55,7 @@ class CouponController extends Controller
             Order::where('coupon_id', $coupon->id)->sum('discount_amount'), 2
         );
 
-        return response()->json($data);
+        return $this->successResponse($data);
     }
 
     public function update(StoreCouponRequest $request, Coupon $coupon): JsonResponse
@@ -62,20 +65,18 @@ class CouponController extends Controller
             unset($data['code']);
         }
         $coupon->update($data);
-        return response()->json(new CouponResource($coupon->fresh()));
+        return $this->successResponse(new CouponResource($coupon->fresh()));
     }
 
     public function destroy(Coupon $coupon): JsonResponse
     {
         // Guard: prevent deleting coupons used by orders
         if ($coupon->orders()->exists()) {
-            return response()->json([
-                'message' => 'Cannot delete a coupon that has been used in orders. Deactivate it instead.',
-            ], 422);
+            return $this->errorResponse('VALIDATION_ERROR', 'Cannot delete a coupon that has been used in orders. Deactivate it instead.', null, 422);
         }
 
         $coupon->delete();
-        return response()->json(['message' => 'Coupon deleted.']);
+        return $this->successResponse(null, null, 200, 'Coupon deleted.');
     }
 
     public function validate(Request $request): JsonResponse
@@ -84,16 +85,14 @@ class CouponController extends Controller
         $coupon = Coupon::where('code', strtoupper($request->code))->first();
 
         if (!$coupon || !$coupon->isValid()) {
-            return response()->json(['message' => 'Invalid or expired coupon.'], 422);
+            return $this->errorResponse('VALIDATION_ERROR', 'Invalid or expired coupon.', null, 422);
         }
 
         if ($coupon->min_order_amount && $request->subtotal < $coupon->min_order_amount) {
-            return response()->json([
-                'message' => "Minimum order amount is {$coupon->min_order_amount}."
-            ], 422);
+            return $this->errorResponse('VALIDATION_ERROR', "Minimum order amount is {$coupon->min_order_amount}.", null, 422);
         }
 
-        return response()->json([
+        return $this->successResponse([
             'coupon'   => new CouponResource($coupon),
             'discount' => $coupon->calculateDiscount($request->subtotal),
         ]);
@@ -111,7 +110,7 @@ class CouponController extends Controller
             Order::whereNotNull('coupon_id')->sum('discount_amount'), 2
         );
 
-        return response()->json([
+        return $this->successResponse([
             'total'                => $total,
             'active'               => $active,
             'expired'              => $expired,

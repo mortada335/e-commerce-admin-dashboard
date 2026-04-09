@@ -6,32 +6,30 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Services\OrderService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
 {
+    use ApiResponse;
+
     public function __construct(private OrderService $service) {}
 
     public function index(Request $request): JsonResponse
     {
         $orders = $this->service->list($request->all());
-        return response()->json([
-            'data' => OrderResource::collection($orders->items()),
-            'meta' => [
-                'current_page' => $orders->currentPage(),
-                'last_page'    => $orders->lastPage(),
-                'per_page'     => $orders->perPage(),
-                'total'        => $orders->total(),
-            ],
-        ]);
+        return $this->successResponse(
+            OrderResource::collection($orders->items()),
+            $this->paginationMeta($orders)
+        );
     }
 
     public function show(Order $order): JsonResponse
     {
         $order->load(['customer', 'items', 'statusHistory.createdBy', 'payment', 'coupon']);
-        return response()->json(new OrderResource($order));
+        return $this->successResponse(new OrderResource($order));
     }
 
     public function updateStatus(Request $request, Order $order): JsonResponse
@@ -42,7 +40,7 @@ class OrderController extends Controller
         ]);
 
         $order = $this->service->updateStatus($order, $request->status, $request->comment);
-        return response()->json(new OrderResource($order));
+        return $this->successResponse(new OrderResource($order));
     }
 
     public function bulkUpdateStatus(Request $request): JsonResponse
@@ -71,10 +69,9 @@ class OrderController extends Controller
             }
         }
 
-        return response()->json([
-            'message' => "{$updated} order(s) updated.",
+        return $this->successResponse([
             'skipped' => $skipped,
-        ]);
+        ], null, 200, "{$updated} order(s) updated.");
     }
 
     public function export(Request $request): StreamedResponse
@@ -134,7 +131,7 @@ class OrderController extends Controller
 
         $giftOrders = Order::where('is_gift', true)->count();
 
-        return response()->json([
+        return $this->successResponse([
             'total'             => $total,
             'total_revenue'     => round($totalRevenue, 2),
             'avg_order_value'   => round($avgOrderValue ?? 0, 2),

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    use ApiResponse;
+
     public function login(Request $request): JsonResponse
     {
         $request->validate([
@@ -28,7 +31,7 @@ class AuthController extends Controller
 
         if ($user->is_active === false) {
             Auth::logout();
-            return response()->json(['message' => 'Account is deactivated.'], 403);
+            return $this->errorResponse('FORBIDDEN', 'Account is deactivated.', null, 403);
         }
 
         $ability = $user->hasRole('admin') ? '*' : implode(',', $user->getAllPermissions()->pluck('name')->toArray());
@@ -36,7 +39,7 @@ class AuthController extends Controller
 
         ActivityLog::record('logged_in');
 
-        return response()->json([
+        return $this->successResponse([
             'user' => [
                 'id'     => $user->id,
                 'name'   => $user->name,
@@ -52,7 +55,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user()->load('roles', 'permissions');
-        return response()->json([
+        return $this->successResponse([
             'id'          => $user->id,
             'name'        => $user->name,
             'email'       => $user->email,
@@ -66,6 +69,6 @@ class AuthController extends Controller
     {
         ActivityLog::record('logged_out');
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out successfully.']);
+        return $this->successResponse(null, null, 200, 'Logged out successfully.');
     }
 }

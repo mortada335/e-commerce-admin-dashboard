@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\StockAlert;
 use App\Models\ActivityLog;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class InventoryController extends Controller
 {
+    use ApiResponse;
+
     public function index(Request $request): JsonResponse
     {
         $query = Product::with(['category', 'images'])
@@ -23,12 +26,12 @@ class InventoryController extends Controller
             });
         }
 
-        $products = $query->orderBy('stock_quantity')->paginate(20);
+        $products = $query->orderBy('stock_quantity')->paginate(min((int) $request->get('per_page', 20), 100));
 
-        return response()->json([
-            'data' => $products->items(),
-            'meta' => ['total' => $products->total(), 'current_page' => $products->currentPage()],
-        ]);
+        return $this->successResponse(
+            $products->items(),
+            $this->paginationMeta($products)
+        );
     }
 
     public function alerts(): JsonResponse
@@ -39,7 +42,7 @@ class InventoryController extends Controller
             ->orderBy('stock_quantity')
             ->get(['id', 'name', 'sku', 'stock_quantity', 'low_stock_threshold', 'category_id']);
 
-        return response()->json([
+        return $this->successResponse([
             'count'    => $lowStockProducts->count(),
             'products' => $lowStockProducts,
         ]);
@@ -50,10 +53,36 @@ class InventoryController extends Controller
         $data = $request->validate([
             'stock_quantity'      => 'required|integer|min:0|max:999999',
             'low_stock_threshold' => 'nullable|integer|min:0|max:999999',
+            'expected_quantity'   => 'nullable|integer|min:0',
         ]);
 
         $oldStock = $product->stock_quantity;
-        $product->update($data);
+
+        // Optimistic locking: if expected_quantity is provided, ensure no concurrent modification
+        if (isset($data['expected_quantity'])) {
+            $affected = Product::where('id', $product->id)
+                ->where('stock_quantity', $data['expected_quantity'])
+                ->update([
+                    'stock_quantity'      => $data['stock_quantity'],
+                    'low_stock_threshold' => $data['low_stock_threshold'] ?? $product->low_stock_threshold,
+                ]);
+
+            if ($affected === 0) {
+                return $this->errorResponse(
+                    'STATE_CONFLICT',
+                    'Stock was modified by another user. Please refresh and try again.',
+                    ['current_quantity' => $product->fresh()->stock_quantity],
+                    409
+                );
+            }
+
+            $product = $product->fresh();
+        } else {
+            $product->update([
+                'stock_quantity'      => $data['stock_quantity'],
+                'low_stock_threshold' => $data['low_stock_threshold'] ?? $product->low_stock_threshold,
+            ]);
+        }
 
         ActivityLog::record('stock_updated', $product, [
             'stock_quantity' => $oldStock,
@@ -61,7 +90,16 @@ class InventoryController extends Controller
             'stock_quantity' => $data['stock_quantity'],
         ]);
 
-        return response()->json([
+        // Dispatch low stock notification if stock dropped to/below threshold
+        if ($product->isLowStock() && $oldStock > $product->low_stock_threshold) {
+            $admins = \App\Models\User::role('admin')->get();
+            \Illuminate\Support\Facades\Notification::send(
+                $admins,
+                new \App\Notifications\LowStockNotification($product)
+            );
+        }
+
+        return $this->successResponse([
             'id'             => $product->id,
             'stock_quantity' => $product->stock_quantity,
             'is_low_stock'   => $product->isLowStock(),
@@ -78,7 +116,7 @@ class InventoryController extends Controller
         $avgStock      = Product::avg('stock_quantity');
         $totalValue    = Product::selectRaw('SUM(price * stock_quantity) as value')->value('value');
 
-        return response()->json([
+        return $this->successResponse([
             'total_products'  => $total,
             'total_units'     => (int) $totalUnits,
             'out_of_stock'    => $outOfStock,
@@ -93,10 +131,10 @@ class InventoryController extends Controller
         $logs = ActivityLog::where('action', 'stock_updated')
             ->with('user')
             ->latest()
-            ->paginate($request->get('per_page', 20));
+            ->paginate(min((int) $request->get('per_page', 20), 100));
 
-        return response()->json([
-            'data' => collect($logs->items())->map(fn ($log) => [
+        return $this->successResponse(
+            collect($logs->items())->map(fn ($log) => [
                 'id'          => $log->id,
                 'product'     => $log->subject_type === 'App\\Models\\Product' ? $log->subject_id : null,
                 'old_values'  => $log->old_values,
@@ -104,12 +142,8 @@ class InventoryController extends Controller
                 'user'        => $log->user?->name,
                 'created_at'  => $log->created_at->toISOString(),
             ]),
-            'meta' => [
-                'total'        => $logs->total(),
-                'current_page' => $logs->currentPage(),
-                'last_page'    => $logs->lastPage(),
-            ],
-        ]);
+            $this->paginationMeta($logs)
+        );
     }
 
     public function export(): \Symfony\Component\HttpFoundation\StreamedResponse
@@ -150,23 +184,25 @@ class InventoryController extends Controller
         ]);
 
         $updated = 0;
-        foreach ($request->items as $item) {
-            $product = Product::find($item['product_id']);
-            if ($product) {
-                $oldStock = $product->stock_quantity;
-                $product->update(['stock_quantity' => $item['stock_quantity']]);
-                ActivityLog::record('stock_updated', $product, [
-                    'stock_quantity' => $oldStock,
-                ], [
-                    'stock_quantity' => $item['stock_quantity'],
-                ]);
-                $updated++;
-            }
-        }
 
-        return response()->json([
-            'message' => "{$updated} product(s) stock updated.",
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, &$updated) {
+            foreach ($request->items as $item) {
+                $product = Product::where('id', $item['product_id'])->lockForUpdate()->first();
+                if ($product) {
+                    $oldStock = $product->stock_quantity;
+                    $product->update(['stock_quantity' => $item['stock_quantity']]);
+                    ActivityLog::record('stock_updated', $product, [
+                        'stock_quantity' => $oldStock,
+                    ], [
+                        'stock_quantity' => $item['stock_quantity'],
+                    ]);
+                    $updated++;
+                }
+            }
+        });
+
+        return $this->successResponse([
             'updated' => $updated,
-        ]);
+        ], null, 200, "{$updated} product(s) stock updated.");
     }
 }

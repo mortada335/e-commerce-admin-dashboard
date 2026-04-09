@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Banner;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class BannerController extends Controller
 {
+    use ApiResponse;
+
     /**
      * Display a listing of the resource.
      */
@@ -20,7 +23,8 @@ class BannerController extends Controller
             $query->where('is_active', $request->boolean('is_active'));
         }
 
-        return $query->orderBy('sort_order')->orderByDesc('created_at')->paginate($request->get('per_page', 15));
+        $banners = $query->orderBy('sort_order')->orderByDesc('created_at')->paginate(min((int) $request->get('per_page', 15), 100));
+        return $this->successResponse($banners->items(), $this->paginationMeta($banners));
     }
 
     /**
@@ -47,8 +51,15 @@ class BannerController extends Controller
         $productIds = $validated['product_ids'] ?? [];
         unset($validated['product_ids']);
 
+        // Sanitize text fields
+        foreach (['title', 'event_title', 'link'] as $field) {
+            if (!empty($validated[$field])) {
+                $validated[$field] = strip_tags($validated[$field]);
+            }
+        }
+
         if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('banners', 'public');
+            $validated['image'] = $request->file('image')->store('banners', config('filesystems.default'));
         }
 
         $banner = Banner::create($validated);
@@ -57,7 +68,7 @@ class BannerController extends Controller
             $banner->products()->sync($productIds);
         }
 
-        return response()->json($banner->load('products'), 201);
+        return $this->successResponse($banner->load('products'), null, 201);
     }
 
     /**
@@ -66,7 +77,7 @@ class BannerController extends Controller
     public function show(Banner $banner)
     {
         $banner->load('products');
-        return response()->json($banner);
+        return $this->successResponse($banner);
     }
 
     /**
@@ -93,9 +104,16 @@ class BannerController extends Controller
         $productIds = $validated['product_ids'] ?? null;
         unset($validated['product_ids']);
 
+        // Sanitize text fields
+        foreach (['title', 'event_title', 'link'] as $field) {
+            if (!empty($validated[$field])) {
+                $validated[$field] = strip_tags($validated[$field]);
+            }
+        }
+
         if ($request->hasFile('image')) {
-            if ($banner->image) Storage::disk('public')->delete($banner->image);
-            $validated['image'] = $request->file('image')->store('banners', 'public');
+            if ($banner->image) Storage::disk(config('filesystems.default'))->delete($banner->image);
+            $validated['image'] = $request->file('image')->store('banners', config('filesystems.default'));
         }
 
         $banner->update($validated);
@@ -104,7 +122,7 @@ class BannerController extends Controller
             $banner->products()->sync($productIds);
         }
 
-        return response()->json($banner->load('products'));
+        return $this->successResponse($banner->load('products'));
     }
 
     /**
@@ -112,7 +130,7 @@ class BannerController extends Controller
      */
     public function destroy(Banner $banner)
     {
-        if ($banner->image) Storage::disk('public')->delete($banner->image);
+        if ($banner->image) Storage::disk(config('filesystems.default'))->delete($banner->image);
         $banner->delete();
 
         return response()->noContent();

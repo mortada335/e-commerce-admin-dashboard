@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\ActivityLog;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SettingController extends Controller
 {
+    use ApiResponse;
+
     public function index(): JsonResponse
     {
         $settings = Setting::orderBy('group')->orderBy('key')->get()
@@ -20,14 +23,14 @@ class SettingController extends Controller
                 'label' => $s->label,
             ]]));
 
-        return response()->json($settings);
+        return $this->successResponse($settings);
     }
 
     public function update(Request $request): JsonResponse
     {
         $request->validate([
             'settings' => 'required|array',
-            'settings.*' => 'nullable',
+            'settings.*' => 'nullable|max:10000',
         ]);
 
         $oldValues = [];
@@ -39,10 +42,10 @@ class SettingController extends Controller
 
             // Type-based validation
             if ($setting->type === 'boolean' && !is_bool($value) && !in_array($value, [0, 1, '0', '1', true, false], true)) {
-                return response()->json(['message' => "Setting '{$key}' must be a boolean value."], 422);
+                return $this->errorResponse('VALIDATION_ERROR', "Setting '{$key}' must be a boolean value.", null, 422);
             }
             if ($setting->type === 'number' && !is_numeric($value)) {
-                return response()->json(['message' => "Setting '{$key}' must be a numeric value."], 422);
+                return $this->errorResponse('VALIDATION_ERROR', "Setting '{$key}' must be a numeric value.", null, 422);
             }
 
             $oldValues[$key] = $setting->value;
@@ -54,6 +57,6 @@ class SettingController extends Controller
             ActivityLog::record('settings_updated', null, $oldValues, $newValues);
         }
 
-        return response()->json(['message' => 'Settings updated successfully.']);
+        return $this->successResponse(null, null, 200, 'Settings updated successfully.');
     }
 }

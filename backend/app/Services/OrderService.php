@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\ActivityLog;
+use App\Services\DashboardService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -57,7 +58,7 @@ class OrderService
         $sortDir   = $filters['sort_dir'] ?? 'desc';
         $query->orderBy($sortField, $sortDir);
 
-        return $query->paginate($filters['per_page'] ?? 15);
+        return $query->paginate(min((int) ($filters['per_page'] ?? 15), 100));
     }
 
     public function updateStatus(Order $order, string $status, ?string $comment = null): Order
@@ -101,6 +102,9 @@ class OrderService
 
             ActivityLog::record('order_status_changed', $order, ['status' => $oldStatus], ['status' => $status]);
         });
+
+        // Invalidate dashboard cache after order status change
+        DashboardService::invalidateCache();
 
         return $order->fresh(['customer', 'items', 'statusHistory', 'payment']);
     }

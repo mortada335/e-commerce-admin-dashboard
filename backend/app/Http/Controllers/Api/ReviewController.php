@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Review;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
+    use ApiResponse;
+
     /**
      * Display a listing of the resource.
      */
@@ -23,7 +26,8 @@ class ReviewController extends Controller
             $query->where('is_approved', $request->boolean('is_approved'));
         }
 
-        return $query->orderByDesc('created_at')->paginate($request->get('per_page', 15));
+        $reviews = $query->orderByDesc('created_at')->paginate(min((int) $request->get('per_page', 15), 100));
+        return $this->successResponse($reviews->items(), $this->paginationMeta($reviews));
     }
 
     /**
@@ -35,13 +39,17 @@ class ReviewController extends Controller
             'product_id' => 'required|exists:products,id',
             'customer_id' => 'required|exists:customers,id',
             'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string',
+            'comment' => 'nullable|string|max:2000',
             'is_approved' => 'boolean',
         ]);
 
+        if (!empty($validated['comment'])) {
+            $validated['comment'] = strip_tags($validated['comment']);
+        }
+
         $review = Review::create($validated);
 
-        return response()->json($review->load(['customer', 'product']), 201);
+        return $this->successResponse($review->load(['customer', 'product']), null, 201);
     }
 
     /**
@@ -49,7 +57,7 @@ class ReviewController extends Controller
      */
     public function show(Review $review)
     {
-        return response()->json($review->load(['customer', 'product']));
+        return $this->successResponse($review->load(['customer', 'product']));
     }
 
     /**
@@ -59,19 +67,23 @@ class ReviewController extends Controller
     {
         $validated = $request->validate([
             'rating' => 'sometimes|integer|min:1|max:5',
-            'comment' => 'nullable|string',
+            'comment' => 'nullable|string|max:2000',
             'is_approved' => 'boolean',
         ]);
 
+        if (!empty($validated['comment'])) {
+            $validated['comment'] = strip_tags($validated['comment']);
+        }
+
         $review->update($validated);
 
-        return response()->json($review->load(['customer', 'product']));
+        return $this->successResponse($review->load(['customer', 'product']));
     }
 
     public function toggleApproval(Review $review)
     {
         $review->update(['is_approved' => !$review->is_approved]);
-        return response()->json($review);
+        return $this->successResponse($review);
     }
 
     /**
@@ -95,7 +107,7 @@ class ReviewController extends Controller
             ->pluck('count', 'rating')
             ->toArray();
 
-        return response()->json([
+        return $this->successResponse([
             'total'        => $total,
             'pending'      => $pending,
             'approved'     => $total - $pending,
