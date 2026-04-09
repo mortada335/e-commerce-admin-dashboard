@@ -91,6 +91,11 @@ trait AdminCrud
         return $this->paginatedResponse($data);
     }
 
+    protected function getResourceClass(): ?string
+    {
+        return $this->resourceClass ?? null;
+    }
+
     public function show(Request $request, $id): JsonResponse
     {
         $item = $this->getModelClass()::query();
@@ -99,7 +104,13 @@ trait AdminCrud
         }
         $item = $item->findOrFail($id);
 
-        return $this->successResponse($item);
+        $data = $item;
+        if ($this->getResourceClass()) {
+            $resourceClass = $this->getResourceClass();
+            $data = new $resourceClass($item);
+        }
+
+        return $this->successResponse($data);
     }
 
     public function store(Request $request): JsonResponse
@@ -133,11 +144,18 @@ trait AdminCrud
 
     protected function paginatedResponse($paginator): JsonResponse
     {
+        $items = $paginator->items();
+        
+        if ($this->getResourceClass()) {
+            $resourceClass = $this->getResourceClass();
+            $items = $resourceClass::collection($items);
+        }
+
         return response()->json([
             'count'    => $paginator->total(),
             'next'     => $paginator->nextPageUrl(),
             'previous' => $paginator->previousPageUrl(),
-            'results'  => $paginator->items(),
+            'results'  => $items,
         ]);
     }
 }

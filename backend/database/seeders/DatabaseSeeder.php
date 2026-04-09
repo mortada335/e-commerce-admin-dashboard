@@ -20,15 +20,138 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Roles & Permissions
+        // Permissions — must match the frontend's app_api.action_model naming convention
         $permissions = [
-            'view dashboard', 'view products', 'manage products',
-            'view orders', 'manage orders', 'view customers', 'manage customers',
-            'view categories', 'manage categories', 'view brands', 'manage brands',
-            'view coupons', 'manage coupons',
-            'view inventory', 'manage inventory', 'view settings', 'manage settings',
-            'view payments',
-            'manage banners', 'manage reviews',
+            // Dashboard
+            'app_api.view_hometitle',
+
+            // Orders
+            'app_api.view_ocorder',
+            'app_api.change_ocorder',
+            'app_api.delete_ocorder',
+            'app_api.assign_ocorder',
+            'app_api.view_orderproduct',
+
+            // Delivery
+            'app_api.view_deliverycost',
+            'app_api.change_deliverycost',
+
+            // Home Sections
+            'app_api.view_homepagesections',
+            'app_api.add_homepagesections',
+            'app_api.change_homepagesections',
+            'app_api.delete_homepagesections',
+
+            // Notifications
+            'app_api.view_firebasenotification',
+            'app_api.add_firebasenotification',
+            'app_api.view_schedulednotifications',
+            'app_api.add_schedulednotifications',
+            'app_api.change_schedulednotifications',
+            'app_api.delete_schedulednotifications',
+
+            // Products
+            'app_api.view_ocproduct',
+            'app_api.add_ocproduct',
+            'app_api.change_ocproduct',
+            'app_api.delete_ocproduct',
+            'app_api.view_ocproductimage',
+            'app_api.change_ocproductimage',
+            'app_api.delete_ocproductimage',
+            'app_api.view_ocproductattribute',
+            'app_api.add_ocproductattribute',
+            'app_api.delete_ocproductattribute',
+            'app_api.add_ocproductdiscount',
+
+            // Categories
+            'app_api.view_occategory',
+            'app_api.add_occategory',
+            'app_api.change_occategory',
+            'app_api.delete_occategory',
+
+            // Brands / Manufacturers
+            'app_api.view_ocmanufacturer',
+            'app_api.add_ocmanufacturer',
+            'app_api.change_ocmanufacturer',
+            'app_api.delete_ocmanufacturer',
+
+            // Warehouses
+            'app_api.view_ocwarehouse',
+            'app_api.add_ocwarehouse',
+            'app_api.change_ocwarehouse',
+            'app_api.delete_ocwarehouse',
+
+            // Attributes
+            'app_api.view_ocattribute',
+            'app_api.add_ocattribute',
+            'app_api.change_ocattribute',
+            'app_api.delete_ocattribute',
+            'app_api.view_ocattributegroup',
+            'app_api.add_ocattributegroup',
+            'app_api.change_ocattributegroup',
+            'app_api.delete_ocattributegroup',
+
+            // Options
+            'app_api.view_ocoptionvalue',
+            'app_api.add_ocoptionvalue',
+            'app_api.change_ocoptionvalue',
+            'app_api.delete_ocoptionvalue',
+
+            // Banners & Design
+            'app_api.view_ocbannerimage',
+            'app_api.add_ocbannerimage',
+            'app_api.change_ocbannerimage',
+            'app_api.delete_ocbannerimage',
+            'app_api.view_slide',
+            'app_api.view_appicon',
+            'app_api.add_appicon',
+            'app_api.change_appicon',
+            'app_api.delete_appicon',
+
+            // Short Home Videos
+            'app_api.view_shorthomepagevideo',
+            'app_api.add_shorthomepagevideo',
+            'app_api.change_shorthomepagevideo',
+            'app_api.delete_shorthomepagevideo',
+
+            // Coupons
+            'app_api.view_occoupon',
+            'app_api.add_occoupon',
+            'app_api.change_occoupon',
+            'app_api.delete_occoupon',
+            'app_api.view_occouponhistory',
+            'app_api.view_couponoffer',
+            'app_api.add_couponoffer',
+            'app_api.change_couponoffer',
+            'app_api.delete_couponoffer',
+
+            // Gift Cards & Wallet
+            'app_api.view_giftcard',
+            'app_api.add_giftcard',
+            'app_api.change_giftcard',
+            'app_api.delete_giftcard',
+            'app_api.view_giftwallettransaction',
+
+            // Users
+            'app_api.view_user',
+            'app_api.view_ocuser',
+            'app_api.change_ocuser',
+            'app_api.delete_ocuser',
+            'app_api.view_deleteduser',
+            'app_api.change_userlogin',
+            'app_api.change_passwordresets',
+
+            // Memberships & Ranks
+            'app_api.view_occustomermembership',
+            'app_api.change_occustomermembership',
+            'app_api.view_userrank',
+            'app_api.add_userrank',
+            'app_api.change_userrank',
+            'app_api.delete_userrank',
+
+            // Currency Exchange
+            'app_api.view_currencyexchange',
+            'app_api.change_currencyexchange',
         ];
 
         foreach ($permissions as $perm) {
@@ -41,13 +164,36 @@ class DatabaseSeeder extends Seeder
 
         $admin->syncPermissions(Permission::all());
         $manager->syncPermissions([
-            'view dashboard', 'view products', 'manage products',
-            'view orders', 'manage orders', 'view customers',
-            'view categories', 'view brands', 'view inventory', 'view payments',
+            'app_api.view_hometitle',
+            'app_api.view_ocorder', 'app_api.change_ocorder', 'app_api.view_orderproduct',
+            'app_api.view_ocproduct', 'app_api.add_ocproduct', 'app_api.change_ocproduct',
+            'app_api.view_occategory', 'app_api.change_occategory',
+            'app_api.view_ocmanufacturer',
+            'app_api.view_ocwarehouse',
+            'app_api.view_ocattribute', 'app_api.view_ocattributegroup',
+            'app_api.view_ocbannerimage', 'app_api.view_slide', 'app_api.view_appicon',
+            'app_api.view_occoupon', 'app_api.view_couponoffer',
+            'app_api.view_user', 'app_api.view_ocuser',
+            'app_api.view_occustomermembership', 'app_api.view_userrank',
+            'app_api.view_currencyexchange',
+            'app_api.view_firebasenotification',
+            'app_api.view_homepagesections',
+            'app_api.view_deliverycost',
+            'app_api.view_giftcard', 'app_api.view_giftwallettransaction',
         ]);
         $staff->syncPermissions([
-            'view dashboard', 'view products', 'view orders',
-            'view customers', 'view categories', 'view brands', 'view inventory',
+            'app_api.view_hometitle',
+            'app_api.view_ocorder', 'app_api.view_orderproduct',
+            'app_api.view_ocproduct',
+            'app_api.view_occategory',
+            'app_api.view_ocmanufacturer',
+            'app_api.view_ocwarehouse',
+            'app_api.view_ocattribute', 'app_api.view_ocattributegroup',
+            'app_api.view_ocbannerimage', 'app_api.view_slide',
+            'app_api.view_occoupon',
+            'app_api.view_user', 'app_api.view_ocuser',
+            'app_api.view_currencyexchange',
+            'app_api.view_firebasenotification',
         ]);
 
         // Admin User

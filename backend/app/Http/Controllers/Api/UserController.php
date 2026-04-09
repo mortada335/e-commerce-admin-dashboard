@@ -16,7 +16,8 @@ class UserController extends Controller
     use AdminCrud;
 
     protected string $modelClass = User::class;
-    protected array $searchFields = ['name', 'email'];
+    protected ?string $resourceClass = \App\Http\Resources\UserResource::class;
+    protected array $searchFields = ['name', 'email', 'phone'];
     protected array $filterFields = ['is_active'];
     protected array $with = ['roles'];
 

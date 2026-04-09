@@ -19,7 +19,7 @@ class User extends Authenticatable implements FilamentUser
     use HasFactory, Notifiable, HasApiTokens, HasRoles, SoftDeletes;
 
     protected $fillable = [
-        'name', 'email', 'password', 'avatar', 'is_active',
+        'name', 'email', 'password', 'avatar', 'is_active', 'warehouse_ids',
     ];
 
     protected $hidden = [
@@ -32,6 +32,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
             'is_active'         => 'boolean',
+            'warehouse_ids'     => 'array',
         ];
     }
 

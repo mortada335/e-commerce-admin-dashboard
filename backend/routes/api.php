@@ -46,6 +46,7 @@ use App\Http\Controllers\Api\ProductOptionTypeValueController;
 use App\Http\Controllers\Api\ProductOptionValueController;
 use App\Http\Controllers\Api\ProductVideoController;
 use App\Http\Controllers\Api\ReferralCodeController;
+use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ScheduledNotificationController;
 use App\Http\Controllers\Api\SearchDiscoverController;
 use App\Http\Controllers\Api\SearchFilterController;
@@ -61,6 +62,8 @@ use App\Http\Controllers\Api\UserLoginController;
 use App\Http\Controllers\Api\UserRankController;
 use App\Http\Controllers\Api\UserRecentProductController;
 use App\Http\Controllers\Api\UserSearchHistoryController;
+use App\Http\Controllers\Api\WalletController;
+use App\Http\Controllers\Api\WarehouseAdminController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -249,6 +252,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::patch('/v2/orders_admin/{order_id}', [OrderAdminController::class, 'partialUpdate']);
     Route::delete('/v2/orders_admin/{order_id}', [OrderAdminController::class, 'destroy']);
 
+    Route::post('/get_order_details', [OrderAdminController::class, 'getOrderDetails']);
+
     Route::get('/orders_by_city', [OrderAdminController::class, 'ordersByCity']);
 
     // ── Order Excel ──────────────────────────────────────────
@@ -426,12 +431,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/active-survey', [SurveyController::class, 'updateActiveSurvey']);
 
     // ── App Icons ────────────────────────────────────────────
-    Route::get('/app_icons_admin', [AppIconController::class, 'index']);
-    Route::post('/app_icons_admin', [AppIconController::class, 'store']);
-    Route::get('/app_icons_admin/{id}', [AppIconController::class, 'show']);
-    Route::put('/app_icons_admin/{id}', [AppIconController::class, 'update']);
-    Route::patch('/app_icons_admin/{id}', [AppIconController::class, 'partialUpdate']);
-    Route::delete('/app_icons_admin/{id}', [AppIconController::class, 'destroy']);
+    Route::get('/app_icons', [AppIconController::class, 'index']);
+    Route::post('/app_icons', [AppIconController::class, 'store']);
+    Route::get('/app_icons/{id}', [AppIconController::class, 'show']);
+    Route::put('/app_icons/{id}', [AppIconController::class, 'update']);
+    Route::patch('/app_icons/{id}', [AppIconController::class, 'partialUpdate']);
+    Route::delete('/app_icons/{id}', [AppIconController::class, 'destroy']);
 
     // ── Currency Exchange ────────────────────────────────────
     Route::get('/currency_exchange', [CurrencyExchangeController::class, 'index']);
@@ -496,13 +501,52 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::patch('/order_points_history/{id}', [OrderPointsHistoryController::class, 'partialUpdate']);
     Route::delete('/order_points_history/{id}', [OrderPointsHistoryController::class, 'destroy']);
 
+    // ── Roles ────────────────────────────────────────────────
+    Route::get('/roles', [RoleController::class, 'index']);
+    Route::post('/roles', [RoleController::class, 'store']);
+    Route::get('/roles/{id}', [RoleController::class, 'show']);
+    Route::put('/roles/{id}', [RoleController::class, 'update']);
+    Route::patch('/roles/{id}', [RoleController::class, 'update']);
+    Route::delete('/roles/{id}', [RoleController::class, 'destroy']);
+    Route::post('/add_roles_to_user', [RoleController::class, 'addRolesToUser']);
+    Route::post('/add_warehouses_to_user', [RoleController::class, 'addWarehousesToUser']);
+
+    // ── Warehouses Admin ─────────────────────────────────────
+    Route::get('/warehouses_admin', [WarehouseAdminController::class, 'index']);
+    Route::post('/warehouses_admin', [WarehouseAdminController::class, 'store']);
+    Route::get('/warehouses_admin/{id}', [WarehouseAdminController::class, 'show']);
+    Route::put('/warehouses_admin/{id}', [WarehouseAdminController::class, 'update']);
+    Route::patch('/warehouses_admin/{id}', [WarehouseAdminController::class, 'partialUpdate']);
+    Route::delete('/warehouses_admin/{id}', [WarehouseAdminController::class, 'destroy']);
+
+    // ── Warehouse Zones Admin ────────────────────────────────
+    Route::get('/warehouse_zones_admin', [WarehouseAdminController::class, 'zones']);
+    Route::post('/warehouse_zones_admin', [WarehouseAdminController::class, 'storeZone']);
+    Route::patch('/warehouse_zones_admin/{id}', [WarehouseAdminController::class, 'updateZone']);
+
+    // ── Wallet / Gift Cards ──────────────────────────────────
+    Route::get('/wallet/admin/gift-cards', [WalletController::class, 'giftCards']);
+    Route::post('/wallet/admin/gift-cards', [WalletController::class, 'storeGiftCard']);
+    Route::post('/wallet/admin/gift-cards/bulk-create', [WalletController::class, 'bulkCreateGiftCards']);
+    Route::get('/wallet/admin/wallet-transactions', [WalletController::class, 'walletTransactions']);
+
+    // ── Enums ────────────────────────────────────────────────
+    Route::get('/enums', [MiscController::class, 'enums']);
+
+    // ── Zain Cash Status ─────────────────────────────────────
+    Route::get('/check_zain_cash_status', [MiscController::class, 'checkZainCashStatus']);
+
+    // ── Save Customer Token ──────────────────────────────────
+    Route::post('/save-customer-token', [MiscController::class, 'saveCustomerToken']);
+
     // ── Misc Single Endpoints ────────────────────────────────
     Route::get('/dashboard_charts', [MiscController::class, 'dashboardCharts']);
     Route::get('/dashboard_statistics', [MiscController::class, 'dashboardStatistics']);
     Route::post('/recheck-users-points', [MiscController::class, 'recheckUsersPoints']);
-    Route::get('/redirect_to_sms', [MiscController::class, 'redirectToSms']);
+    Route::post('/redirect_to_sms', [MiscController::class, 'redirectToSms']);
     Route::get('/old-product-modifications', [MiscController::class, 'oldProductModifications']);
     Route::get('/admin-chat/conversations', [MiscController::class, 'chatConversations']);
     Route::get('/content-types', [MiscController::class, 'contentTypes']);
     Route::get('/content-types/{id}', [MiscController::class, 'contentTypeDetail']);
 });
+

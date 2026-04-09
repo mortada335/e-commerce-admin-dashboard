@@ -11,6 +11,7 @@ class BannerAdminController extends Controller
     use AdminCrud;
 
     protected string $modelClass = Banner::class;
+    protected ?string $resourceClass = \App\Http\Resources\BannerResource::class;
     protected array $searchFields = ['title'];
     protected array $filterFields = ['type', 'status', 'position'];
 }

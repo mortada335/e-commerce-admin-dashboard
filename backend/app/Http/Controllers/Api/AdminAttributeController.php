@@ -14,8 +14,10 @@ class AdminAttributeController extends Controller
     use AdminCrud;
 
     protected string $modelClass = Attribute::class;
+    protected ?string $resourceClass = \App\Http\Resources\AttributeResource::class;
     protected array $searchFields = ['name'];
     protected array $filterFields = ['attribute_group_id'];
+    protected array $with = ['group'];
 
     public function store(Request $request): JsonResponse
     {

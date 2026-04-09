@@ -75,6 +75,53 @@ class MiscController extends Controller
         ]);
     }
 
+    /** /enums/ */
+    public function enums(): JsonResponse
+    {
+        return $this->successResponse([
+            'order_statuses' => [
+                ['id' => 1, 'name' => 'Pending'],
+                ['id' => 5, 'name' => 'Completed'],
+                ['id' => 7, 'name' => 'Cancelled Order'],
+                ['id' => 11, 'name' => 'Refunded'],
+                ['id' => 20, 'name' => 'Cashless Pending'],
+                ['id' => 21, 'name' => 'Failed Payment'],
+                ['id' => 25, 'name' => 'Whatsapp Completed'],
+                ['id' => 30, 'name' => 'Preparing'],
+                ['id' => 31, 'name' => 'Ready To Pickup'],
+            ],
+            'product_statuses' => [
+                ['id' => 0, 'name' => 'NEW'],
+                ['id' => 1, 'name' => 'PROMOTED'],
+                ['id' => 2, 'name' => 'FEATURED'],
+                ['id' => 3, 'name' => 'DISCOUNT'],
+                ['id' => 4, 'name' => 'NONE'],
+            ],
+        ]);
+    }
+
+    /** /check_zain_cash_status/ */
+    public function checkZainCashStatus(Request $request): JsonResponse
+    {
+        $transactionId = $request->input('transaction_id');
+
+        return $this->successResponse([
+            'transaction_id' => $transactionId,
+            'status' => 'pending',
+            'message' => 'Zain Cash status check not yet integrated.',
+        ]);
+    }
+
+    /** /save-customer-token/ */
+    public function saveCustomerToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'token' => 'required|string',
+        ]);
+
+        return $this->successResponse(null, null, 200, 'Customer token saved.');
+    }
+
     protected function paginatedResponse($paginator): JsonResponse
     {
         return response()->json([

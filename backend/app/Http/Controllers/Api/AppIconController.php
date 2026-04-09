@@ -8,6 +8,7 @@ class AppIconController extends Controller
 {
     use AdminCrud;
     protected string $modelClass = AppIcon::class;
+    protected ?string $resourceClass = \App\Http\Resources\AppIconResource::class;
     protected array $searchFields = ['name'];
     protected array $filterFields = ['status'];
 }

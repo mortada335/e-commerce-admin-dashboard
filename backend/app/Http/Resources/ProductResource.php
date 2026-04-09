@@ -57,6 +57,23 @@ class ProductResource extends JsonResource
             ),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+
+            // Frontend aliases
+            'product_id'        => $this->id,
+            'model'             => $this->sku ?? $this->name,
+            'quantity_avilable' => $this->stock_quantity,
+            'discounted_price'  => $this->discount_price,
+            'discounted'        => !empty($this->discount_price),
+            'date_added'        => $this->created_at?->toISOString(),
+            'date_modified'     => $this->updated_at?->toISOString(),
+            'new_product'       => $this->is_new,
+            'enabled'           => $this->is_enabled,
+            'has_points'        => false,
+            'productData'       => [
+                'product_id'  => $this->id,
+                'description' => [['name' => $this->name]],
+            ],
+            'product'           => $this->name,
         ];
     }
 }

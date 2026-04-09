@@ -11,6 +11,7 @@ class BrandAdminController extends Controller
     use AdminCrud;
 
     protected string $modelClass = Brand::class;
+    protected ?string $resourceClass = \App\Http\Resources\BrandResource::class;
     protected array $searchFields = ['name'];
     protected array $filterFields = ['status'];
 }

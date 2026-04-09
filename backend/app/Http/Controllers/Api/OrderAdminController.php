@@ -13,9 +13,10 @@ class OrderAdminController extends Controller
     use AdminCrud;
 
     protected string $modelClass = Order::class;
+    protected ?string $resourceClass = \App\Http\Resources\OrderResource::class;
     protected array $searchFields = ['order_number', 'shipping_name', 'shipping_phone'];
     protected array $filterFields = ['status', 'payment_status', 'payment_method', 'customer_id'];
-    protected array $with = ['customer', 'items', 'payment'];
+    protected array $with = ['customer', 'items', 'payment', 'statusHistory'];
 
     public function index(Request $request): JsonResponse
     {
@@ -71,5 +72,18 @@ class OrderAdminController extends Controller
             ->get();
 
         return $this->successResponse($data);
+    }
+
+    public function getOrderDetails(Request $request): JsonResponse
+    {
+        $request->validate([
+            'id' => 'required|exists:orders,order_id'
+        ]);
+
+        $products = \App\Models\OrderProduct::with(['product' => function($query) {
+            $query->with('description');
+        }])->where('order_id', $request->input('id'))->get();
+
+        return $this->successResponse($products);
     }
 }

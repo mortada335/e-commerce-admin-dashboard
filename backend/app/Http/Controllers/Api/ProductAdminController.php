@@ -14,6 +14,7 @@ class ProductAdminController extends Controller
     use AdminCrud;
 
     protected string $modelClass = Product::class;
+    protected ?string $resourceClass = \App\Http\Resources\ProductResource::class;
     protected array $searchFields = ['name', 'sku', 'description'];
     protected array $filterFields = [
         'category_id', 'brand_id', 'status', 'is_featured', 'is_new', 'is_enabled',
