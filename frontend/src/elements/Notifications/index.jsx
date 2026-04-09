@@ -193,16 +193,6 @@ export function NotificationsMenu() {
   //       vapidKey:
   //         "BNJJ1MXWMPcdlJZFJOmUoykj4JEB9IQNWWDEtpjUfjj9d8BxzCE8K2viaj2hzjaHSgFF4M3971o35KbaeFjQGS0",
   //     });
-
-  //     // Unsubscribe from topic
-  //     if (token) {
-  //       fetch(`https://iid.googleapis.com/iid/v1/${token}/rel/topics/admin_topic`, {
-  //         method: "DELETE",
-  //         headers: {
-  //           Authorization: `key=AAAAyoRGl28:APA91bEK0K-3pptwiO2UpdZRNK4Ojr_7cswO2RMhlbZRU6Y3yigZ7t8AZP_6_BtWHqUEARY3BgOv3Qvcqy1N7tVf4k98tEgdp3-dac5jXfQO9XOcZjnabGRXBGoMXASIDYN5k2Pt0fZf`, // Add your server key here
-  //           "Content-Type": "application/json",
-  //         },
-  //       })
   //         .then((response) => {
   //           // if (response.ok) {
   //           //   console.log(`Unsubscribed from topic "admin_topic"`);
