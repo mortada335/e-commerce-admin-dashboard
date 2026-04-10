@@ -9,20 +9,20 @@ class DeliveryCostResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                       => $this->id,
-            'city'                     => $this->city,
-            'zone'                     => $this->zone,
-            'cost'                     => (float) $this->cost,
-            'free_delivery_threshold'  => (float) $this->free_delivery_threshold,
-            'estimated_days'           => $this->estimated_days,
-            'status'                   => $this->status,
+            'id' => $this->id,
+            'city' => $this->city,
+            'zone' => $this->zone,
+            'cost' => (float) $this->cost,
+            'freeDeliveryThreshold' => (float) $this->free_delivery_threshold,
+            'estimatedDays' => $this->estimated_days,
+            'status' => $this->status,
             
             // Front-End aliases
-            'special_cost'             => 0,
-            'special_cost_total_order' => 0,
-            'start_date'               => $this->created_at?->toISOString(),
-            'end_date'                 => null,
-            'created_at'               => $this->created_at?->toISOString(),
+            'specialCost' => 0,
+            'specialCostTotalOrder' => 0,
+            'startDate' => $this->created_at?->toISOString(),
+            'endDate' => null,
+            'createdAt' => $this->created_at?->toISOString(),
         ];
     }
 }

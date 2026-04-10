@@ -13,15 +13,15 @@ class AttributeGroupResource extends JsonResource
         $nameEnglish = $descriptions->where('language_id', 1)->first()?->name;
 
         return [
-            'id'                => $this->id,
-            'name'              => $nameEnglish ?? $this->name ?? 'N/A',
-            'sort_order'        => $this->sort_order,
+            'id' => $this->id,
+            'name' => $nameEnglish ?? $this->name ?? 'N/A',
+            'sortOrder' => $this->sort_order,
             
             // Front-End aliases
             'nameArabic'        => $nameArabic ?? $nameEnglish ?? $this->name ?? 'N/A',
             'nameEnglish'       => $nameEnglish ?? $this->name ?? 'N/A',
-            'num_of_attributes' => $this->attributes_count ?? 0,
-            'created_at'        => $this->created_at?->toISOString(),
+            'numOfAttributes' => $this->attributes_count ?? 0,
+            'createdAt' => $this->created_at?->toISOString(),
         ];
     }
 }

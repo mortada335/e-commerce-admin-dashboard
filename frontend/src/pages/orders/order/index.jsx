@@ -143,7 +143,7 @@ const Order = () => {
     setIsPublishShipmentDialogOpenDialogOpen(true);
     setOrderDetails(order?.data);
   };
-  console.log(order?.data?.data)
+  // console.log(order?.data?.data)
 
     const shippingGovernorate = useMemo(() => {
    return resolveCity(order?.data?.shipping_postcode)
@@ -178,7 +178,7 @@ const Order = () => {
             order?.data?.order_id ? order?.data?.order_id : ""
           }`}
         /> */}
-        {order?.data?.order_id && (
+        {order?.data?.data?.id && (
           <Card className="flex justify-between items-center w-full px-4 gap-4 py-2 flex-wrap">
               <div className="flex justify-end items-center flex-wrap gap-2 md:gap-4">
 
@@ -205,7 +205,7 @@ const Order = () => {
          <Separator orientation="vertical" className="h-10"/>
 
             <Can permissions={["app_api.view_ocuser"]}>
-              <Link to={`/users/details/${order?.data?.customer_id}`}>
+              <Link to={`/users/details/${order?.data?.data?.customer?.id}`}>
                 <Button 
                 // variant="outline" 
                 className="flex items-center gap-1"
@@ -309,7 +309,7 @@ const Order = () => {
                 <CardHeader className="py-3 px-4">
                   <HeaderText className={"lg:text-lg"} text={t("Order Status")} />
                   <Text
-                    text={t(convertStatusIdToString(order?.data?.order_status_id))}
+                    text={t((order?.data?.data?.status))}
                   />
                 </CardHeader>
               </Card>
@@ -318,8 +318,8 @@ const Order = () => {
                   <HeaderText className={"lg:text-lg"} text={t("Created")} />
                   <Text
                     text={
-                      order?.data?.date_added
-                        ? displayBasicDate(order?.data?.date_added)
+                      order?.data?.data?.dateAdded
+                        ? displayBasicDate(order?.data?.data?.dateAdded)
                         : t("no date")
                     }
                   />
@@ -330,8 +330,8 @@ const Order = () => {
                   <HeaderText className={"lg:text-lg"} text={t("Modified")} />
                   <Text
                     text={
-                      order?.data?.date_modified
-                        ? displayBasicDate(order?.data?.date_modified)
+                      order?.data?.data?.dateModified
+                        ? displayBasicDate(order?.data?.data?.dateModified)
                         : t("no date")
                     }
                   />
@@ -343,14 +343,14 @@ const Order = () => {
                   <HeaderText className={"lg:text-lg"} text={t("Sub Total")} />
                   <Text
                     text={formatNumberWithCurrency(
-                      String(order?.data?.sub_total),
+                      String(order?.data?.data?.subtotal),
                       "IQD"
                     )}
                   />
 
                   {/* PROMO CODE NAME */}
                   <HeaderText className={"lg:text-lg"} text={t("Promo Code")} />
-                  <Text text={order?.data?.coupon || t("No promo code.")} />
+                  <Text text={order?.data?.data?.coupon || t("No promo code.")} />
 
                   {/* PROMO CODE DISCOUNT */}
                   <HeaderText
@@ -361,7 +361,7 @@ const Order = () => {
                   {/* PROMO CODE DISCOUNT VALUE */}
                   <Text
                     text={`${formatNumberWithCurrency(
-                      String(order?.data?.coupon_discount_value),
+                      String(order?.data?.data?.coupon_discount_value),
                       "IQD"
                     )}`}
                   />
@@ -373,7 +373,7 @@ const Order = () => {
                   />
                   <Text
                     text={formatNumberWithCurrency(
-                      String(order?.data?.total_after_discount),
+                      String(order?.data?.data?.total_after_discount),
                       "IQD"
                     )}
                   /> */}
@@ -382,7 +382,7 @@ const Order = () => {
                   <HeaderText className={"lg:text-lg"} text={t("Delivery Costs")} />
                   <Text
                     text={formatNumberWithCurrency(
-                      String(order?.data?.delivery_costs),
+                      String(order?.data?.data?.delivery_costs),
                       "IQD"
                     )}
                   />
@@ -391,7 +391,7 @@ const Order = () => {
                   <HeaderText className={"lg:text-lg"} text={t("Total")} />
                   <Text
                     text={formatNumberWithCurrency(
-                      String(order?.data?.total),
+                      String(order?.data?.data?.total),
                       "IQD"
                     )}
                     className="text-slate-700 dark:text-slate-100 text-base font-semibold"
@@ -400,7 +400,7 @@ const Order = () => {
                   {/* <HeaderText className={"lg:text-lg"} text="Total USD" />
                 <Text
                   text={formatNumberWithCurrency(
-                    String(order?.data?.total_usd),
+                    String(order?.data?.data?.total_usd),
                     "USD"
                   )}
                 /> */}
@@ -409,7 +409,7 @@ const Order = () => {
 
                   <HeaderText className={"lg:text-lg"} text={t("Whatsapp Feedback")} />
                 <Text
-                  text={order?.data?.whatsapp_response || t("Customer has not provided WhatsApp feedback.")}
+                  text={order?.data?.data?.whatsapp_response || t("Customer has not provided WhatsApp feedback.")}
                 />
                 </>
                 }
@@ -418,33 +418,33 @@ const Order = () => {
 
               <Card className="w-full h-full">
                 <CardHeader className="py-3 px-4">
-                  {order?.data?.assignees?.[0]?.name  ?
+                  {order?.data?.data?.assignees?.[0]?.name  ?
                   <>
                     <HeaderText className={"lg:text-lg"} text={t("Assigned User")} />
-                    <Text text={order?.data?.assignees?.[0]?.name} />
+                    <Text text={order?.data?.data?.orderData?.assignees?.[0]?.name} />
                   </> : 
                   <HeaderText className={"lg:text-lg"} text={t("Unassigned ")} />
                   }
                   <HeaderText className={"lg:text-lg"} text={t("Customer Name")} />
-                  <Text text={order?.data?.customer_data?.customer_name} />
+                  <Text text={order?.data?.data?.customerName} />
                   <HeaderText
                     className={"lg:text-lg"}
                     text={t("Payment Full Name")}
                   />
                   <Text
-                    text={`${order?.data?.payment_firstname} ${order?.data?.payment_lastname}`}
+                    text={`${order?.data?.data?.payment_firstname} ${order?.data?.data?.payment_lastname}`}
                   />
                   <HeaderText className={"lg:text-lg"} text={t("Payment Method")} />
-                  <OrderPaymentMethod method={order?.data?.payment_method}/>
+                  <OrderPaymentMethod method={order?.data?.data?.payment_method}/>
                   <HeaderText className={"lg:text-lg"} text={t("Governorate")} />
                   <Text text={paymentGovernorate?.name_ar||''} />
                   <HeaderText className={"lg:text-lg"} text={t("City")} />
-                  <Text text={order?.data?.payment_city} />
+                  <Text text={order?.data?.data?.payment_city} />
                   <HeaderText className={"lg:text-lg"} text={t("Area")} />
                   <Text text={baghdadAreaPaymentAddress1} />
                   <HeaderText className={"lg:text-lg"} text={t("Address")} />
                   <Text
-                    text={`${order?.data?.payment_address_2}`}
+                    text={`${order?.data?.data?.payment_address_2}`}
                   />
                 </CardHeader>
               </Card>
@@ -455,21 +455,21 @@ const Order = () => {
                     text={t("Shipping Full Name")}
                   />
                   <Text
-                    text={`${order?.data?.shipping_firstname} ${order?.data?.shipping_lastname}`}
+                    text={`${order?.data?.data?.shipping_firstname} ${order?.data?.data?.shipping_lastname}`}
                   />
                   <HeaderText className={"lg:text-lg"} text={t("Phone Number")} />
-                  <Text text={order?.data?.customer_data?.customer_number} />
-                  {order?.data?.shipping_custom_field && (
+                  <Text text={order?.data?.data?.customer_data?.customer_number} />
+                  {order?.data?.data?.shipping_custom_field && (
                     <>
                       <HeaderText
                         className={"lg:text-lg"}
                         text={t("Second Phone Number")}
                       />
-                      <Text text={order?.data?.shipping_custom_field} />
+                      <Text text={order?.data?.data?.shipping_custom_field} />
                     </>
                   )}
                   <HeaderText className={"lg:text-lg"} text={t("Shipping City")} />
-                  <Text text={order?.data?.shipping_city} />
+                  <Text text={order?.data?.data?.shipping_city} />
                                    <HeaderText
                     className={"lg:text-lg"}
                     text={t("Shipping Area")}
@@ -693,11 +693,11 @@ const Order = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {order?.data?.scheduled_points_tasks?.date_added
+                          {order?.data?.scheduled_points_tasks?.dateAdded
                             ? differenceInDays(
                                 addDays(
                                   new Date(
-                                    order.data.scheduled_points_tasks.date_added
+                                    order.data.scheduled_points_tasks.dateAdded
                                   ),
                                   7
                                 ),
@@ -706,7 +706,7 @@ const Order = () => {
                               ? `${differenceInDays(
                                   addDays(
                                     new Date(
-                                      order.data.scheduled_points_tasks.date_added
+                                      order.data.scheduled_points_tasks.dateAdded
                                     ),
                                     7
                                   ),
@@ -715,7 +715,7 @@ const Order = () => {
                               : formatFullDate(
                                   addDays(
                                     new Date(
-                                      order.data.scheduled_points_tasks.date_added
+                                      order.data.scheduled_points_tasks.dateAdded
                                     ),
                                     7
                                   )
