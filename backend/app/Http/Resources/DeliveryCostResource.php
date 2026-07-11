@@ -17,12 +17,20 @@ class DeliveryCostResource extends JsonResource
             'estimatedDays' => $this->estimated_days,
             'status' => $this->status,
             
-            // Front-End aliases
+            // camelCase Front-End aliases
             'specialCost' => 0,
             'specialCostTotalOrder' => 0,
             'startDate' => $this->created_at?->toISOString(),
             'endDate' => null,
             'createdAt' => $this->created_at?->toISOString(),
+
+            // snake_case Front-End aliases
+            'free_delivery_threshold' => (float) $this->free_delivery_threshold,
+            'estimated_days' => $this->estimated_days,
+            'special_cost' => 0,
+            'special_cost_total_order' => 0,
+            'start_date' => $this->created_at?->toISOString(),
+            'end_date' => null,
         ];
     }
 }

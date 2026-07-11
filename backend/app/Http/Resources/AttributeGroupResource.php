@@ -17,11 +17,16 @@ class AttributeGroupResource extends JsonResource
             'name' => $nameEnglish ?? $this->name ?? 'N/A',
             'sortOrder' => $this->sort_order,
             
-            // Front-End aliases
+            // camelCase Front-End aliases
             'nameArabic'        => $nameArabic ?? $nameEnglish ?? $this->name ?? 'N/A',
             'nameEnglish'       => $nameEnglish ?? $this->name ?? 'N/A',
             'numOfAttributes' => $this->attributes_count ?? 0,
             'createdAt' => $this->created_at?->toISOString(),
+
+            // snake_case Front-End aliases
+            'attribute_group_id' => $this->id,
+            'sort_order' => $this->sort_order,
+            'num_of_attributes' => $this->attributes_count ?? 0,
         ];
     }
 }

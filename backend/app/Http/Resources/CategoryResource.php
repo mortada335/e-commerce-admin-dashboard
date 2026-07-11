@@ -26,17 +26,24 @@ class CategoryResource extends JsonResource
             ),
             'productsCount' => $this->products_count ?? null,
             
-            // Frontend aliases
+            // camelCase Frontend aliases
             'nameArabic'           => $this->name,
             'nameEnglish'          => $this->name,
             'descriptionArabic'    => $this->description,
             'descriptionEnglish'   => $this->description,
             'numOfProducts' => $this->products_count ?? 0,
             'parentCategoryName' => $this->whenLoaded('parent', fn () => $this->parent ? $this->parent->name : 'None', 'None'),
-            'sortOrder'            => $this->sort_order,
             'status' => $this->is_active,
             'color' => null,
             'transparency' => null,
+
+            // snake_case Frontend aliases
+            'category_id' => $this->id,
+            'sort_order' => $this->sort_order,
+            'num_of_products' => $this->products_count ?? 0,
+            'parent_category_name' => $this->whenLoaded('parent', fn () => $this->parent ? $this->parent->name : 'None', 'None'),
+            'parent_id' => $this->parent_id,
+            'is_active' => $this->is_active,
 
             'createdAt' => $this->created_at?->toISOString(),
         ];

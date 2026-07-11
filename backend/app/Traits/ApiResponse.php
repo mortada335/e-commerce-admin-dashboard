@@ -26,12 +26,29 @@ trait ApiResponse
             $response['message'] = $message;
         }
 
-        if ($data !== null) {
-            $response['data'] = $data;
-        }
+        // If pagination meta is provided, wrap data in Django-style paginated format
+        // Frontend expects: { data: { count, results, next, previous } }
+        if ($meta !== null && $data !== null) {
+            $currentPage = $meta['current_page'] ?? 1;
+            $lastPage = $meta['last_page'] ?? 1;
+            $total = $meta['total'] ?? 0;
 
-        if ($meta !== null) {
+            $response['data'] = [
+                'count'    => $total,
+                'next'     => $currentPage < $lastPage ? $currentPage + 1 : null,
+                'previous' => $currentPage > 1 ? $currentPage - 1 : null,
+                'results'  => $data,
+            ];
+            // Also include meta for any other consumers
             $response['meta'] = $meta;
+        } else {
+            if ($data !== null) {
+                $response['data'] = $data;
+            }
+
+            if ($meta !== null) {
+                $response['meta'] = $meta;
+            }
         }
 
         return response()->json($response, $code);

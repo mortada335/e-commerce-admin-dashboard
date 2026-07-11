@@ -36,7 +36,7 @@ class OrderResource extends JsonResource
                 'address2' => $this->shipping_address_2,
                 'city' => $this->shipping_city,
                 'state' => $this->shipping_state,
-                'country' => $this->shipping_country, // Fixed comma trailing error if I stopped here
+                'country' => $this->shipping_country,
                 'zip' => $this->shipping_zip,
                 'phone' => $this->shipping_phone,
                 // Frontend aliases for shipping name parts
@@ -49,21 +49,51 @@ class OrderResource extends JsonResource
                 'email' => $this->customer->email,
                 'phone' => $this->customer->phone,
             ] : null),
-            // Front-End aliases
+
+            // camelCase Front-End aliases
             'customerName'   => $this->customer ? $this->customer->full_name : 'Guest',
             'customerNumber' => $this->customer ? $this->customer->phone : $this->shipping_phone,
             'shipmentName'   => $this->shipping_name,
-            // Additional aliases for frontend
-            'order_status_id' => $this->status,
-            'order_status' => $this->status,
-            'coupon' => $this->coupon?->code ?? null,
             'dateAdded'      => $this->created_at?->toISOString(),
             'dateModified'   => $this->updated_at?->toISOString(),
+
+            // snake_case Front-End aliases (frontend pages access these directly)
+            'order_id'       => $this->id,
+            'order_status_id' => $this->status,
+            'order_status'   => $this->status,
+            'payment_method' => $this->payment_method,
+            'payment_status' => $this->payment_status,
+            'date_added'     => $this->created_at?->toISOString(),
+            'date_modified'  => $this->updated_at?->toISOString(),
+            'shipping_firstname' => $this->shipping_firstname,
+            'shipping_lastname'  => $this->shipping_lastname,
+            'customer_name'  => $this->customer ? $this->customer->full_name : 'Guest',
+            'customer_number' => $this->customer ? $this->customer->phone : $this->shipping_phone,
+            'customer_id'    => $this->customer_id,
+            'num_products'   => $this->whenLoaded('items', fn () => $this->items->sum('quantity'), 0),
+            'delivery_costs' => (float) $this->delivery_costs,
+            'payment_firstname' => $this->shipping_firstname,
+
+            // Nested customer_data object (frontend accesses order.customer_data.customer_name)
+            'customer_data' => [
+                'customer_name'   => $this->customer ? $this->customer->full_name : 'Guest',
+                'customer_number' => $this->customer ? $this->customer->phone : $this->shipping_phone,
+            ],
+
+            'coupon' => $this->coupon?->code ?? null,
+
             'orderData'      => [
+                'orderId' => $this->id,
                 'orderStatusId' => $this->status,
                 'status' => $this->status,
+                'customerName' => $this->customer ? $this->customer->full_name : 'Guest',
+                'customerNumber' => $this->customer ? $this->customer->phone : $this->shipping_phone,
+                'dateAdded' => $this->created_at?->toISOString(),
+                'dateModified' => $this->updated_at?->toISOString(),
                 'preparingStartedAt' => null,
                 'preparingEndedAt' => null,
+                'preparing_started_at' => null,
+                'preparing_ended_at' => null,
                 'assignees' => [],
             ],
 
@@ -77,6 +107,12 @@ class OrderResource extends JsonResource
                     'unitPrice' => (float) $item->unit_price,
                     'quantity' => $item->quantity,
                     'subtotal' => (float) $item->subtotal,
+                    // snake_case aliases
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product_name,
+                    'product_sku' => $item->product_sku,
+                    'product_options' => $item->product_options,
+                    'unit_price' => (float) $item->unit_price,
                 ])
             ),
             'statusHistory' => $this->whenLoaded('statusHistory', fn () =>

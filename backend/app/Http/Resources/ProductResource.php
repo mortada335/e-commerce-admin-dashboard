@@ -41,9 +41,14 @@ class ProductResource extends JsonResource
                 $this->images->map(fn ($img) => [
                     'id' => $img->id,
                     'url' => $img->url,
+                    'image' => $img->url,
                     'altText' => $img->alt_text,
                     'sortOrder' => $img->sort_order,
                     'isPrimary' => $img->is_primary,
+                    // snake_case aliases
+                    'alt_text' => $img->alt_text,
+                    'sort_order' => $img->sort_order,
+                    'is_primary' => $img->is_primary,
                 ])
             ),
             'variants' => $this->whenLoaded('variants', fn () =>
@@ -53,12 +58,15 @@ class ProductResource extends JsonResource
                     'price' => (float) $v->price,
                     'stockQuantity' => $v->stock_quantity,
                     'isActive' => $v->is_active,
+                    // snake_case aliases
+                    'stock_quantity' => $v->stock_quantity,
+                    'is_active' => $v->is_active,
                 ])
             ),
             'createdAt' => $this->created_at?->toISOString(),
             'updatedAt' => $this->updated_at?->toISOString(),
 
-            // Frontend aliases
+            // Frontend aliases (camelCase)
             'productId' => $this->id,
             'model' => $this->sku ?? $this->name,
             'quantityAvilable' => $this->stock_quantity,
@@ -71,9 +79,26 @@ class ProductResource extends JsonResource
             'hasPoints' => false,
             'productData'       => [
                 'productId' => $this->id,
+                'product_id' => $this->id,
                 'description' => [['name' => $this->name]],
+                'has_points' => false,
+                'hasPoints' => false,
             ],
             'product' => $this->name,
+
+            // snake_case Frontend aliases (frontend pages access these directly)
+            'product_id' => $this->id,
+            'available_quantity' => $this->stock_quantity,
+            'discounted_price' => $this->discount_price ? (float) $this->discount_price : null,
+            'new_product' => $this->is_new,
+            'new_item' => $this->is_new,
+            'has_points' => false,
+            'date_added' => $this->created_at?->toISOString(),
+            'date_modified' => $this->updated_at?->toISOString(),
+            'discount_start_date' => $this->discount_start_date?->toISOString(),
+            'discount_expiry_date' => $this->discount_expiry_date?->toISOString(),
+            'short_description' => $this->short_description,
+            'stock_quantity' => $this->stock_quantity,
         ];
     }
 }

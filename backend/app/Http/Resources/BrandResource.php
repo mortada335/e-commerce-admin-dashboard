@@ -21,6 +21,11 @@ class BrandResource extends JsonResource
             'noindex' => $this->noindex,
             'createdAt' => $this->created_at?->toISOString(),
             'updatedAt' => $this->updated_at?->toISOString(),
+
+            // snake_case Frontend aliases
+            'manufacturer_id' => $this->id,
+            'sort_order' => $this->sort_order,
+            'is_active' => $this->is_active,
         ];
     }
 }

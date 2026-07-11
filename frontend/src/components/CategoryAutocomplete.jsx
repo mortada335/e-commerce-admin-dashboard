@@ -74,6 +74,7 @@ export default function CategoryAutocomplete({
   // Function to construct category path.
   const getCategoryPath = (category) => {
     if (!category) return "";
+    console.log(category)
 
     const pathElements = [];
     const parentCategoryName =

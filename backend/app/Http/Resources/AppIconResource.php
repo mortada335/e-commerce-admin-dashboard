@@ -19,6 +19,11 @@ class AppIconResource extends JsonResource
             'platform' => 3, // Default to 'Both' based on user enums
             'createdAt' => $this->created_at?->toISOString(),
             'updatedAt' => $this->updated_at?->toISOString(),
+
+            // snake_case Front-End aliases
+            'icon_url' => $this->icon_url,
+            'sort_order' => $this->sort_order,
+            'is_active' => (bool) $this->status,
         ];
     }
 }

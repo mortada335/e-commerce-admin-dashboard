@@ -23,6 +23,16 @@ class BannerResource extends JsonResource
             'sortOrder' => $this->sort_order,
             'languageId' => 1, // Defaulting to English alias
             'createdAt' => $this->created_at?->toISOString(),
+
+            // snake_case Frontend aliases
+            'banner_image_id' => $this->id,
+            'banner_type' => $this->banner_type,
+            'banner_type_id' => $this->banner_type_id,
+            'event_date' => $this->event_date?->toISOString(),
+            'event_date_end' => $this->event_date_end?->toISOString(),
+            'event_title' => $this->event_title,
+            'sort_order' => $this->sort_order,
+            'language_id' => 1,
         ];
     }
 }

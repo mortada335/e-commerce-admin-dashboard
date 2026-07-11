@@ -17,7 +17,7 @@ class NoteResource extends JsonResource
             'endDate' => $this->end_date?->toISOString(),
             'createdAt' => $this->created_at?->toISOString(),
 
-            // Front-End aliases
+            // camelCase Front-End aliases
             'dateAdded'     => $this->created_at?->toISOString(),
             'dateModified'  => $this->updated_at?->toISOString(),
             'bgColor'       => '#f0f0f0',
@@ -26,6 +26,14 @@ class NoteResource extends JsonResource
             'language' => 1,
             'type' => 'Info',
             'categoryName' => 'General',
+
+            // snake_case Front-End aliases
+            'start_date' => $this->start_date?->toISOString(),
+            'end_date' => $this->end_date?->toISOString(),
+            'date_added' => $this->created_at?->toISOString(),
+            'date_modified' => $this->updated_at?->toISOString(),
+            'bg_color' => '#f0f0f0',
+            'category_name' => 'General',
         ];
     }
 }
